@@ -1,0 +1,210 @@
+\documentclass[11pt,epsf]{article}
+\usepackage{amssymb,amsmath,amsthm,amsfonts,mathrsfs,color}
+\usepackage{epsfig}
+\usepackage{latexsym}
+\usepackage{verbatim}
+\usepackage{setspace}
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+\usepackage{algorithmicext}
+\usepackage{ifthen}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage[utf8]{luainputenc}
+\usepackage[bibencoding=utf8,backend=biber]{biblatex}
+\addbibresource{cosc6326-pa2-michael-yantosca.bib}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{{\footnotesize{COSC6326 PA 2}}}
+\rhead{{\footnotesize{Michael Yantosca}}}
+
+\usepackage{longtable}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepgfplotslibrary{external}
+\usepgfplotslibrary{statistics}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{pgfplots.groupplots, external}
+\tikzexternalize[]
+\pgfplotsset{
+  tick label style={font=\footnotesize},
+  label style={font=\small},
+  legend style={font=\small},
+  compat=newest
+}
+\pgfplotstableset{
+  col sep=comma,
+  begin table=\begin{longtable},
+  end table=\end{longtable},
+  every head row/.append style={after row=\endhead}
+}
+
+\newtheorem{fact}{Fact}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{claim}{Claim}
+\newtheorem{remark}{Remark}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+\newtheorem{example}{Example}
+\newtheorem{observation}{Observation}
+\newtheorem{exercise}{Exercise}
+\newtheorem{statement}{Statement}
+\newtheorem{problem}{Problem}
+
+\newcommand{\TODO}[0]{\textbf{\color{red}{TODO}}}
+
+% \linregplots{title}{prefix}{suffix}{x}{y}
+\newcommand{\linregplots}[5]{
+  \nextgroupplot[title=#1]
+  \addplot [red, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k1#3.log};
+  \addplot [red, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k1#3.log};
+  \addplot [blue, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k2#3.log};
+  \addplot [blue, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k2#3.log};
+  \addplot [green, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k4#3.log};
+  \addplot [green, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k4#3.log};
+  \addplot [orange, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k8#3.log};
+  \addplot [orange, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k8#3.log};
+  \addplot [purple, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k16#3.log};
+  \addplot [purple, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k16#3.log};
+  \addplot [brown, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k32#3.log};
+  \addplot [brown, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k32#3.log};
+}
+
+\date{}
+\title{COSC6326 Programming Assignment 2}
+\author{Michael Yantosca}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Introduction}{
+  \paragraph{}{
+    \TODO
+  }
+}
+
+\section{Analysis}{
+  \subsection{\texttt{text2mpig}}{
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Text-To-MPI-Graph}, Algorithm for Converting Edge-Centric Text Model to Compact Edge-Centric Form}
+        \begin{algorithmic}
+          \STATE{\TODO}
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \TODO
+    }
+  }
+
+  \subsection{\texttt{genmpig}}{
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Generate-MPI-Graph}, Distributed Algorithm for Generating an Erdos-Renyi Graph Stored in Compact Edge-Centric Form}
+        \begin{algorithmic}
+          \STATE{\TODO}
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \TODO
+    }
+  }
+
+  \subsection{\texttt{bfs-coco}}{
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
+        \label{alg:bfs-coco}
+        \begin{algorithmic}
+          \STATE{\TODO}
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \TODO
+    }
+
+    \begin{theorem}
+      \label{thm:bfs-coco}
+      Algorithm~\ref{alg:bfs-coco} determines the connected components in an arbitrary graph
+      of $n$ vertices distributed over $k$ machines with communication complexity $O(???)$.
+    \end{theorem}
+    \begin{proof}
+      Because reasons.
+    \end{proof}
+  }
+}
+
+\section{Results}{
+  \subsection{Test Procedures}{
+    \paragraph{}{
+      Tests to validate correctness were performed locally on a dual-core laptop
+      \footnote{2 x Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz.} running Pop!OS.
+      \footnote{An Ubuntu 18.04 variant.}
+      Tests for which results were collected systematically and graphed were
+      done on the UH \texttt{crill} cluster with the following parameters:
+      \begin{itemize}
+      \item{$n \in 2^{[10,20]}$, the total population size}
+      \item{$k \in \{1,2,4,8,16,32\}$, the number of distributed nodes}
+      \item{$\epsilon = 0.2$, the threshold error}
+      \item{$p$, the existential probability of a given edge,
+        \begin{align}
+          p &
+          \begin{cases}
+            < \frac{(1 - \epsilon)\ln n}{n} \\
+            = \frac{\ln n}{n} \\
+            > \frac{(1 + \epsilon)\ln n}{n} \\
+            < \frac{(1 - \epsilon)}{n} \\
+            = \frac{1}{n} \\
+            > \frac{(1 + \epsilon)}{n} \\
+          \end{cases}
+        \end{align}
+      }
+      \end{itemize}
+      Each parameter combination was executed at least 3 times with
+      several executables contributing to the testing process:
+    }
+    \paragraph{\texttt{txt2mpig}}{
+      A utility program for converting SNAP edge-centric model text files
+      into a compact edge-centric binary format suitable for accessing via MP/IO.
+    }
+    \paragraph{\texttt{genmpig}}{
+      A utility program for generating Erdos-Renyi random graphs and saving
+      in a compact edge-centric binary format.
+    }
+    \paragraph{\texttt{bfs-coco}}{
+      A program which reads a compact edge-centric binary format file and
+      distributes the vertex-centric equivalent across a $k$-machine context
+      and subsequently executes Algorithm~\ref{alg:bfs-coco} on the distributed graph.
+    }
+    \paragraph{}{
+      The reader is directed to the accompanying \texttt{README.md} for
+      explicit usage instructions on the various programs as well as
+      for a deeper explanation of implementation considerations,
+      engineering tradeoffs, and known issues with the programs.
+    }
+    \paragraph{}{
+      It should be noted that the MPI 2.1 standard\autocite{MPI21} and g++-7.2
+      was used for development since they were available through the development
+      laptop's package system, but the program compiled and ran on the \texttt{crill}
+      cluster with g++-5.3.0 and MPI 3.0. The code requires the C++-11 standard.
+    }
+  }
+}
+
+\section{Conclusions}{
+  \paragraph{}{
+    \TODO
+  }
+}
+
+\printbibliography
+\end{document}
