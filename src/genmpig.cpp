@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
-#include <random>
+#include <sys/time.h>
 #include <mpi.h>
 
 int main(int argc, char *argv[]) {
@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
   size_t edge_wr_buf_off = 0;
   memset(edge_wr_buf, 0x0, edge_wr_buf_sz * sizeof(uint32_t));
 
-  std::random_device rd;
-  std::mt19937 prng(rd());
-  std::uniform_real_distribution<double> edge_dist(0.0, 1.0);
-
+  struct drand48_data rand_state;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  srand48_r(tv.tv_sec * 1000000 + tv.tv_usec, &rand_state);
   // Open the output file for writing.
   MPI_File_open(MPI_COMM_WORLD, fname_out, MPI_MODE_CREATE | MPI_MODE_RDWR,
 		MPI_INFO_NULL, &mpi_fp_out);
@@ -104,7 +104,10 @@ int main(int argc, char *argv[]) {
 	// Sample the Bernoulli random variable E_uv:
 	//   1, if sample <= p
 	//   0  if sample > p
-	if (edge_dist(prng) <= p_edge) {
+	double p_uv;
+	drand48_r(&rand_state, &p_uv);
+
+	if (p_uv <= p_edge) {
 	  // Add (u,v + rank) to the machine's output buffer.
 	  edge_wr_buf[edge_wr_buf_off++] = u;
 	  edge_wr_buf[edge_wr_buf_off++] = v + rank;
