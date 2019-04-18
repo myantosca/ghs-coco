@@ -1,6 +1,7 @@
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
 #include <random>
-
 #include <mpi.h>
 
 int main(int argc, char *argv[]) {

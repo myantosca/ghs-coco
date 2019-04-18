@@ -1,7 +1,6 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
 #include <mpi.h>
 
 int main(int argc, char *argv[]) {
