@@ -9,6 +9,8 @@ int main(int argc, char *argv[]) {
   int rank, machines, edges_per_block = 1;
   double p_edge = 0;
   uint32_t n = 1;
+  bool monte_carlo = false;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &machines);
@@ -52,6 +54,10 @@ int main(int argc, char *argv[]) {
 	return -1;
       }
     }
+    // Monte Carlo edge generation (faster, but may not be completely correct)
+    if (!strcmp("-m", argv[a])) {
+      monte_carlo = true;
+    }
     a++;
   }
 
@@ -70,6 +76,7 @@ int main(int argc, char *argv[]) {
   srand48_r(tv.tv_sec * 1000000 + tv.tv_usec, &rand_state);
   std::random_device rd;
   std::mt19937 prng(tv.tv_sec * 1000000 + tv.tv_usec);
+  std::bernoulli_distribution edge_bern_dist(p_edge);
   // Open the output file for writing.
   MPI_File_open(MPI_COMM_WORLD, fname_out, MPI_MODE_CREATE | MPI_MODE_RDWR,
 		MPI_INFO_NULL, &mpi_fp_out);
@@ -110,32 +117,52 @@ int main(int argc, char *argv[]) {
 	edge_wr_buf_off = 0;
       }
 
-      // Create the binomial distribution for quickly determining
-      // the degree of u without having to do n - u Bernoulli tests.
-      // We avoid nodes v < u to avoid duplicates.
-      // The probability would have been handled in a previous u.
-      // Thus, there is an assumption of direction on each edge, i.e.,
-      // ∀ (u,v) . u < v, which preserves the property that the
-      // edge probability is not over- or undercounted per edge.
-      std::binomial_distribution<uint32_t> edge_dist(n - 1 - u, p_edge);
-      // Determine the degree of u. This should have some variance
-      // by virtue of the PRNG and the distribution depending on it.
-      size_t edges = edge_dist(prng);
+      if (monte_carlo) {
+	// Monte Carlo edge generation (faster, but not necessarily correct).
 
-      std::uniform_int_distribution<uint32_t> vs(u + 1, n - 1);
-      // "Pick" each v randomly from a uniform distribution over [u + 1, n).
-      for (uint32_t e = 0; e < edges; e++) {
-	// NB: We are NOT guaranteed to avoid duplicates here
-	// because the PRNG could yield the same v more than once.
-	uint32_t v = vs(prng);
-	// Add (u,v) to the machine's output buffer.
-	edge_wr_buf[edge_wr_buf_off++] = u;
-	edge_wr_buf[edge_wr_buf_off++] = v;
+	// Create the binomial distribution for quickly determining
+	// the degree of u without having to do n - u Bernoulli tests.
+	// We avoid nodes v < u to avoid duplicates.
+	// The probability would have been handled in a previous u.
+	// Thus, there is an assumption of direction on each edge, i.e.,
+	// ∀ (u,v) . u < v, which preserves the property that the
+	// edge probability is not over- or undercounted per edge.
+	std::binomial_distribution<uint32_t> edge_dist(n - 1 - u, p_edge);
+	// Determine the degree of u. This should have some variance
+	// by virtue of the PRNG and the distribution depending on it.
+	size_t edges = edge_dist(prng);
 
-	// Guard against buffer overrun by dumping.
-	if (edge_wr_buf_off == edge_wr_buf_sz) {
-	  MPI_File_write_shared(mpi_fp_out, edge_wr_buf, edge_wr_buf_off, MPI_UNSIGNED, &dump_status);
+	std::uniform_int_distribution<uint32_t> vs(u + 1, n - 1);
+	// "Pick" each v randomly from a uniform distribution over [u + 1, n).
+	for (uint32_t e = 0; e < edges; e++) {
+	  // NB: We are NOT guaranteed to avoid duplicates here
+	  // because the PRNG could yield the same v more than once.
+	  uint32_t v = vs(prng);
+	  // Add (u,v) to the machine's output buffer.
+	  edge_wr_buf[edge_wr_buf_off++] = u;
+	  edge_wr_buf[edge_wr_buf_off++] = v;
+
+	  // Guard against buffer overrun by dumping.
+	  if (edge_wr_buf_off == edge_wr_buf_sz) {
+	    MPI_File_write_shared(mpi_fp_out, edge_wr_buf, edge_wr_buf_off, MPI_UNSIGNED, &dump_status);
 	  edge_wr_buf_off = 0;
+	  }
+	}
+      }
+      else {
+	// Las-Vegas edge generation (slower, but guaranteed correct).
+	for (uint32_t v = u + 1; v < n; v++) {
+	  if (edge_bern_dist(prng)) {
+	    // Add (u,v) to the machine's output buffer.
+	    edge_wr_buf[edge_wr_buf_off++] = u;
+	    edge_wr_buf[edge_wr_buf_off++] = v;
+
+	    // Guard against buffer overrun by dumping.
+	    if (edge_wr_buf_off == edge_wr_buf_sz) {
+	      MPI_File_write_shared(mpi_fp_out, edge_wr_buf, edge_wr_buf_off, MPI_UNSIGNED, &dump_status);
+	      edge_wr_buf_off = 0;
+	    }
+	  }
 	}
       }
     }
