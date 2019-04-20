@@ -5,28 +5,36 @@
 #include <random>
 #include <map>
 #include <unordered_set>
+#include <vector>
 #include <iostream>
 #include <mpi.h>
 
 // https://en.wikipedia.org/wiki/Mersenne_prime#List_of_known_Mersenne_primes
 #define MERSENNE_61 2305843009213693951
 #define MACHINE_HASH(__VERTEX__) ((hash_a * __VERTEX__ + hash_b) % MERSENNE_61) % machines
+
+typedef enum {
+  UNGROUPED = 0,
+  BROADCAST = 1,
+  PENDING = 2,
+  FINISHED = 3
+} vertex_state_t;
+
+
 typedef struct vertex
 {
   uint32_t id;
   uint32_t parent;
   uint32_t group;
   uint32_t group_ct;
-  uint32_t awaiting;
-  uint32_t edge_ct;
-  uint32_t edge_sz;
-  uint32_t *neighbors;
+  vertex_state_t state;
+  std::unordered_set<uint32_t> neighbors;
 } vertex_t;
 
 typedef struct ucast_msg
 {
   uint32_t parent;
-  uint32_t decrement;
+  uint32_t child;
   uint32_t group_ct;
 } ucast_msg_t;
 
@@ -200,23 +208,13 @@ int main(int argc, char *argv[]) {
       vertex_u->parent = u;
       vertex_u->group = u;
       vertex_u->group_ct = 1; // population of BFS sub-tree including itself
-      // Set state variable. First decrement is upon receipt of broadcast.
-      vertex_u->awaiting = 1;
-      vertex_u->edge_ct = 0;
-      vertex_u->edge_sz = 1;
-      vertex_u->neighbors = (uint32_t *)malloc(sizeof(uint32_t));
+      vertex_u->state = UNGROUPED;
+      vertex_u->neighbors = std::unordered_set<uint32_t>();
+      vertex_u->neighbors.clear();
       V_machine[u] = vertex_u;
     }
     if (u != v) {
-      if (V_machine[u]->edge_ct == V_machine[u]->edge_sz) {
-	V_machine[u]->edge_sz *= 2;
-	V_machine[u]->neighbors = (uint32_t *)realloc(V_machine[u]->neighbors,
-						      V_machine[u]->edge_sz * sizeof(uint32_t));
-      }
-      // Increment edge count and add newest neighbor.
-      V_machine[u]->neighbors[V_machine[u]->edge_ct++] = v;
-      // Increment state variable for counting down during upcast phase.
-      V_machine[u]->awaiting++;
+      V_machine[u]->neighbors.insert(v);
     }
   }
 
@@ -228,8 +226,8 @@ int main(int argc, char *argv[]) {
       for (auto &kv : V_machine) {
 	std::cout << "[" << machine << "]";
 	std::cout << kv.first << ":";
-	for (int i = 0; i < kv.second->edge_ct; i++) {
-	  std::cout << " " << kv.second->neighbors[i];
+	for (auto &neighbor : kv.second->neighbors) {
+	  std::cout << " " << neighbor;
 	}
 	std::cout << std::endl;
       }
@@ -243,11 +241,11 @@ int main(int argc, char *argv[]) {
   memset(forest, 0, forest_sz);
 
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
-  std::map <int, std::map<uint32_t, ucast_msg_t>> ucast_msgs;
+  std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
   for (int machine = 0; machine < machines; machine++) {
     bcast_msgs[machine] = std::unordered_set<uint32_t>();
-    ucast_msgs[machine] = std::map<uint32_t, ucast_msg_t>();
+    ucast_msgs[machine] = std::vector<ucast_msg_t>();
   }
   // Continue reducing vertices to forest
   // until the internal vertex map is empty.
@@ -273,7 +271,7 @@ int main(int argc, char *argv[]) {
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
     if (rank == bfs_root_machine) {
-      if (V_machine.find(bfs_root) != V_machine.end()) V_machine[bfs_root]->awaiting--;
+      V_machine[bfs_root]->state = BROADCAST;
     }
 
     // Continue flooding until root has received
@@ -282,21 +280,28 @@ int main(int argc, char *argv[]) {
       // Broadcast phase
       for (auto &kv : V_machine) {
 	// If scheduled to broadcast...
-	if (kv.second->awaiting == kv.second->edge_ct) {
+	if (kv.second->state == BROADCAST) {
+	  kv.second->state = PENDING;
 	  // Broadcast group to children.
-	  for (uint32_t i = 0; i < kv.second->edge_ct; i++) {
-	    uint32_t child = kv.second->neighbors[i];
+	  to_delete.clear();
+	  for (auto &child : kv.second->neighbors) {
 	    uint32_t child_machine = MACHINE_HASH(child);
 	    // Local delivery
+	    //if ((rank == child_machine) && (V_machine.find(child) != V_machine.end())) {
 	    if (rank == child_machine) {
-	      if (V_machine.find(child) != V_machine.end()) {
-		// Assign parent.
+	      if (V_machine[child]->state == UNGROUPED) {
+		// If ungrouped, assign parent.
 		V_machine[child]->parent = kv.second->id;
 		// Assign group label.
 		V_machine[child]->group = kv.second->group;
-		// Decrement awaiting counter to initiate broadcast in the next round.
-		V_machine[child]->awaiting--;
+		// Update vertex state.
+		V_machine[child]->state = BROADCAST;
 	      }
+	      else {
+		to_delete.insert(child);
+	      }
+	      // Remove attempted parent regardless of prospective child state.
+	      V_machine[child]->neighbors.erase(kv.second->id);
 	    }
 	    // Remote delivery
 	    else {
@@ -304,6 +309,10 @@ int main(int argc, char *argv[]) {
 	      bcast_msgs[child_machine].insert(kv.second->id);
 	    }
 	  }
+	  for(auto &child : to_delete) {
+	    kv.second->neighbors.erase(child);
+	  }
+	  to_delete.clear();
 	}
       }
 
@@ -328,18 +337,32 @@ int main(int argc, char *argv[]) {
       // Perform local receipt of remote flood.
       for (int i = 0; i < recv_totals[rank]; i++) {
 	uint32_t parent = recv_buf[i];
+	uint32_t parent_machine = MACHINE_HASH(parent);
 	for (auto &kv : V_machine) {
-	  // If ungrouped...
-	  if (kv.second->awaiting == kv.second->edge_ct + 1) {
-	    int j = 0;
-	    while ((j < kv.second->edge_ct) &&
-		   (parent == kv.second->neighbors[j]))
-	      { j++; }
-	    if (j < kv.second->edge_ct) {
+	  if (kv.second->neighbors.find(parent) != kv.second->neighbors.end()) {
+	    // Ungrouped
+	    if (kv.second->state == UNGROUPED) {
 	      kv.second->parent = parent;
-	      kv.second->awaiting--;
+	      kv.second->state = BROADCAST;
 	      kv.second->group = bfs_root;
 	    }
+	    // Grouped
+	    else {
+	      // Otherwise, cut ties with the attempted parent
+	      // so the sender can ignore the recipient in the future.
+	      if (rank == parent_machine) {
+		V_machine[parent]->neighbors.erase(kv.second->id);
+	      }
+	      else {
+		ucast_msg_t msg;
+		msg.parent = parent;
+		msg.child = kv.second->id;
+		msg.group_ct = 0;
+		ucast_msgs[parent_machine].push_back(msg);
+	      }
+	    }
+	    // Remove attempted parent regardless of prospective child state.
+	    kv.second->neighbors.erase(kv.second->id);
 	  }
 	}
       }
@@ -348,7 +371,8 @@ int main(int argc, char *argv[]) {
       // Upcast phase
       for (auto &kv : V_machine) {
 	// If no longer waiting on children...
-	if (kv.second->awaiting == 0) {
+	if (kv.second->state == PENDING && kv.second->neighbors.size() == 0) {
+	  kv.second->state == FINISHED;
 	  // Upcast subtree population to parent.
 	  if (kv.first == bfs_root) {
 	    // Notify all machines when BFS root is finished.
@@ -360,25 +384,20 @@ int main(int argc, char *argv[]) {
 	    uint32_t parent_machine = MACHINE_HASH(parent);
 	    // Local delivery.
 	    if (rank == parent_machine) {
-	      if (V_machine.find(parent) != V_machine.end()) {
+	      //if (V_machine.find(parent) != V_machine.end()) {
 		// Subsume group population into parent node.
 		V_machine[parent]->group_ct += kv.second->group_ct;
 		// Decrement parent's awaiting counter.
-		V_machine[parent]->awaiting--;
-	      }
+		V_machine[parent]->neighbors.erase(kv.second->id);
+		//}
 	    }
 	    // Remote delivery.
 	    else {
 	      ucast_msg_t msg;
-	      msg.parent = kv.second->parent;
-	      msg.decrement = 1;
+	      msg.parent = parent;
+	      msg.child = kv.second->id;
 	      msg.group_ct = kv.second->group_ct;
-	      if (ucast_msgs[parent_machine].find(msg.parent) != ucast_msgs[parent_machine].end()) {
-		// Consolidate message to parent.
-		msg.decrement += ucast_msgs[parent_machine][msg.parent].decrement;
-		msg.group_ct +=  ucast_msgs[parent_machine][msg.parent].group_ct;
-	      }
-	      ucast_msgs[parent_machine][msg.parent] = msg;
+	      ucast_msgs[parent_machine].push_back(msg);
 	    }
 	  }
 	  to_delete.insert(kv.first);
@@ -391,9 +410,9 @@ int main(int argc, char *argv[]) {
 	send_bufs[kv.first] = (uint32_t *)malloc(send_counts[kv.first] * sizeof(uint32_t));
 	int i = 0;
 	for (auto &v : kv.second) {
-	  send_bufs[kv.first][i++] = v.second.parent;
-	  send_bufs[kv.first][i++] = v.second.decrement;
-	  send_bufs[kv.first][i++] = v.second.group_ct;
+	  send_bufs[kv.first][i++] = v.parent;
+	  send_bufs[kv.first][i++] = v.child;
+	  send_bufs[kv.first][i++] = v.group_ct;
 	}
       }
       ucast_msgs.clear();
@@ -407,18 +426,19 @@ int main(int argc, char *argv[]) {
       // Perform local receipt of remote upcast.
       for (int i = 0; i < recv_totals[rank]; i+=3) {
 	uint32_t parent = recv_buf[i];
-	uint32_t decrement = recv_buf[i+1];
+	uint32_t child = recv_buf[i+1];
 	uint32_t group_ct = recv_buf[i+2];
-	if (V_machine.find(parent) != V_machine.end()) {
-	  V_machine[parent]->awaiting -= decrement;
+	//if (V_machine.find(parent) != V_machine.end()) {
+	  V_machine[parent]->neighbors.erase(child);
 	  V_machine[parent]->group_ct += group_ct;
-	}
+	  //}
       }
       if (recv_buf) free(recv_buf);
 
       // Erase moribund vertices that have sent their
       // respective upcast messages.
       for (auto &v : to_delete) {
+	std::cout << "Deleting " << v << std::endl;
 	V_machine.erase(v);
       }
       to_delete.clear();
