@@ -42,10 +42,17 @@ int main(int argc, char *argv[]) {
   std::random_device rd;
   std::mt19937 prng(rd());
 
-  std::uniform_int_distribution<uint64_t> hash_b_dist(0, MERSENNE_61 - 1);
-  std::uniform_int_distribution<uint64_t> hash_a_dist(1, MERSENNE_61 - 1);
-  uint64_t hash_a = hash_a_dist(prng);
-  uint64_t hash_b = hash_b_dist(prng);
+  uint64_t hash_a = 1;
+  uint64_t hash_b = 0;
+  if (rank == 0) {
+    std::uniform_int_distribution<uint64_t> hash_b_dist(0, MERSENNE_61 - 1);
+    std::uniform_int_distribution<uint64_t> hash_a_dist(1, MERSENNE_61 - 1);
+    hash_b = hash_a_dist(prng);
+    hash_a = hash_b_dist(prng);
+  }
+
+  MPI_Bcast(&hash_a, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&hash_b, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
   // Read input and distribute to appropriate nodes.
   MPI_File mpi_fp_in = MPI_FILE_NULL;
