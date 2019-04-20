@@ -10,7 +10,7 @@
 
 // https://en.wikipedia.org/wiki/Mersenne_prime#List_of_known_Mersenne_primes
 #define MERSENNE_61 2305843009213693951
-
+#define MACHINE_HASH(__VERTEX__) ((hash_a * __VERTEX__ + hash_b) % MERSENNE_61) % machines
 typedef struct vertex
 {
   uint32_t id;
@@ -148,8 +148,8 @@ int main(int argc, char *argv[]) {
     uint32_t u = edges_buf[i*2];
     uint32_t v = edges_buf[i*2+1];
     // Determine the machines housing u and v.
-    uint64_t machine_u = ((hash_a * u + hash_b) % MERSENNE_61) % machines;
-    uint64_t machine_v = ((hash_a * v + hash_b) % MERSENNE_61) % machines;
+    uint64_t machine_u = MACHINE_HASH(u);
+    uint64_t machine_v = MACHINE_HASH(v);
     // Resize machine[u]'s buffer if we're out of room.
     if (send_counts[machine_u] == send_caps[machine_u]) {
       send_caps[machine_u] *= 2;
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
     MPI_Allreduce(&bfs_root, &forest[trees],
 		  1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
     bfs_root = forest[trees];
-    int bfs_root_machine = ((hash_a * bfs_root + hash_b) % MERSENNE_61) % machines;
+    int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
     if (rank == bfs_root_machine) {
       if (V_machine.find(bfs_root) != V_machine.end()) V_machine[bfs_root]->awaiting--;
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
 	  // Broadcast group to children.
 	  for (uint32_t i = 0; i < kv.second->edge_ct; i++) {
 	    uint32_t child = kv.second->neighbors[i];
-	    uint32_t child_machine = ((hash_a * child + hash_b) % MERSENNE_61) % machines;
+	    uint32_t child_machine = MACHINE_HASH(child);
 	    // Local delivery
 	    if (rank == child_machine) {
 	      if (V_machine.find(child) != V_machine.end()) {
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
 	  }
 	  else {
 	    uint32_t parent = kv.second->parent;
-	    uint32_t parent_machine = ((hash_a * parent + hash_b) % MERSENNE_61) % machines;
+	    uint32_t parent_machine = MACHINE_HASH(parent);
 	    // Local delivery.
 	    if (rank == parent_machine) {
 	      if (V_machine.find(parent) != V_machine.end()) {
