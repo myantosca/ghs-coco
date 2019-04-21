@@ -277,55 +277,58 @@ int main(int argc, char *argv[]) {
     // Continue flooding until root has received
     // population subtotals from all its children.
     while (!forest[trees+1]) {
-      // Broadcast phase
+      /*******************
+       * Broadcast phase *
+       *******************/
       for (auto &kv : V_machine) {
+	vertex_t *u = kv.second;
 	// If scheduled to broadcast...
-	if (kv.second->state == BROADCAST) {
-	  kv.second->state = PENDING;
+	if (u->state == BROADCAST) {
+	  u->state = PENDING;
 	  // Broadcast group to children.
 	  to_delete.clear();
-	  for (auto &child : kv.second->neighbors) {
+	  for (auto &child : u->neighbors) {
 	    uint32_t child_machine = MACHINE_HASH(child);
 	    // Local delivery
-	    //if ((rank == child_machine) && (V_machine.find(child) != V_machine.end())) {
 	    if (rank == child_machine) {
-	      if (V_machine[child]->state == UNGROUPED) {
+	      vertex_t *v = V_machine[child];
+	      if (v->state == UNGROUPED) {
 		// If ungrouped, assign parent.
-		V_machine[child]->parent = kv.second->id;
+		v->parent = u->id;
 		// Assign group label.
-		V_machine[child]->group = kv.second->group;
+		v->group = u->group;
 		// Update vertex state.
-		V_machine[child]->state = BROADCAST;
+		v->state = BROADCAST;
 	      }
 	      else {
 		to_delete.insert(child);
 	      }
 	      // Remove attempted parent regardless of prospective child state.
-	      V_machine[child]->neighbors.erase(kv.second->id);
+	      v->neighbors.erase(u->id);
 	    }
 	    // Remote delivery
 	    else {
 	      // Add sender to machine-specific broadcast pre-buffer.
-	      bcast_msgs[child_machine].insert(kv.second->id);
+	      bcast_msgs[child_machine].insert(u->id);
 	    }
 	  }
 	  for(auto &child : to_delete) {
-	    kv.second->neighbors.erase(child);
+	    u->neighbors.erase(child);
 	  }
 	  to_delete.clear();
 	}
       }
 
       // Gather machine-specific broadcast buffers for each machine in turn.
-      for (auto &kv : bcast_msgs) {
-	send_counts[kv.first] = kv.second.size();
-	send_bufs[kv.first] = (uint32_t *)malloc(send_counts[kv.first] * sizeof(uint32_t));
+      for (auto &machine_msg : bcast_msgs) {
+	send_counts[machine_msg.first] = machine_msg.second.size();
+	send_bufs[machine_msg.first] = (uint32_t *)malloc(send_counts[machine_msg.first] * sizeof(uint32_t));
 	int i = 0;
-	for (auto &v : kv.second) {
-	  send_bufs[kv.first][i++] = v;
+	for (auto &v : machine_msg.second) {
+	  send_bufs[machine_msg.first][i++] = v;
 	}
+	machine_msg.second.clear();
       }
-      bcast_msgs.clear();
 
       // Exchange broadcast messages between all machines.
       exchange(rank, machines,
@@ -333,70 +336,66 @@ int main(int argc, char *argv[]) {
 	       recv_counts, recv_displs, recv_totals,
 	       MPI_UNSIGNED, &recv_buf);
 
-
       // Perform local receipt of remote flood.
       for (int i = 0; i < recv_totals[rank]; i++) {
-	uint32_t parent = recv_buf[i];
-	uint32_t parent_machine = MACHINE_HASH(parent);
+	uint32_t id_u = recv_buf[i];
+	uint32_t machine_u = MACHINE_HASH(id_u);
+	// Check each node for connection to each remote flooding parent.
 	for (auto &kv : V_machine) {
-	  if (kv.second->neighbors.find(parent) != kv.second->neighbors.end()) {
-	    // Ungrouped
-	    if (kv.second->state == UNGROUPED) {
-	      kv.second->parent = parent;
-	      kv.second->state = BROADCAST;
-	      kv.second->group = bfs_root;
+	  vertex_t *v = kv.second;
+	  // If connected...
+	  if (v->neighbors.find(id_u) != v->neighbors.end()) {
+	    // Child is ungrouped. Meet your parent!
+	    if (v->state == UNGROUPED) {
+	      v->parent = id_u;
+	      v->state = BROADCAST;
+	      v->group = bfs_root;
 	    }
-	    // Grouped
+	    // Child already has a parent. Upcast to remove dead link.
 	    else {
-	      // Otherwise, cut ties with the attempted parent
-	      // so the sender can ignore the recipient in the future.
-	      if (rank == parent_machine) {
-		V_machine[parent]->neighbors.erase(kv.second->id);
-	      }
-	      else {
-		ucast_msg_t msg;
-		msg.parent = parent;
-		msg.child = kv.second->id;
-		msg.group_ct = 0;
-		ucast_msgs[parent_machine].push_back(msg);
-	      }
+	      // No local check is done here since the parent must be remote.
+	      ucast_msg_t msg;
+	      msg.parent = id_u;
+	      msg.child = v->id;
+	      msg.group_ct = 0;
+	      ucast_msgs[machine_u].push_back(msg);
 	    }
 	    // Remove attempted parent regardless of prospective child state.
-	    kv.second->neighbors.erase(kv.second->id);
+	    v->neighbors.erase(id_u);
 	  }
 	}
       }
       if (recv_buf) free(recv_buf);
 
-      // Upcast phase
+      /****************
+       * Upcast phase *
+       ****************/
       for (auto &kv : V_machine) {
+	vertex_t *u = kv.second;
 	// If no longer waiting on children...
-	if (kv.second->state == PENDING && kv.second->neighbors.size() == 0) {
-	  kv.second->state == FINISHED;
+	if (u->state == PENDING && u->neighbors.size() == 0) {
+	  u->state == FINISHED;
 	  // Upcast subtree population to parent.
-	  if (kv.first == bfs_root) {
+	  if (u->id == bfs_root) {
 	    // Notify all machines when BFS root is finished.
-	    forest[trees+1] = kv.second->group_ct;
+	    forest[trees+1] = u->group_ct;
 	    MPI_Bcast(&forest[trees+1], 1, MPI_UNSIGNED, bfs_root_machine, MPI_COMM_WORLD);
 	  }
 	  else {
-	    uint32_t parent = kv.second->parent;
-	    uint32_t parent_machine = MACHINE_HASH(parent);
+	    uint32_t parent_machine = MACHINE_HASH(u->parent);
 	    // Local delivery.
 	    if (rank == parent_machine) {
-	      //if (V_machine.find(parent) != V_machine.end()) {
-		// Subsume group population into parent node.
-		V_machine[parent]->group_ct += kv.second->group_ct;
-		// Decrement parent's awaiting counter.
-		V_machine[parent]->neighbors.erase(kv.second->id);
-		//}
+	      // Subsume group population into parent node.
+	      V_machine[u->parent]->group_ct += u->group_ct;
+	      // Decrement parent's awaiting counter.
+	      V_machine[u->parent]->neighbors.erase(u->id);
 	    }
 	    // Remote delivery.
 	    else {
 	      ucast_msg_t msg;
-	      msg.parent = parent;
-	      msg.child = kv.second->id;
-	      msg.group_ct = kv.second->group_ct;
+	      msg.parent = u->parent;
+	      msg.child = u->id;
+	      msg.group_ct = u->group_ct;
 	      ucast_msgs[parent_machine].push_back(msg);
 	    }
 	  }
@@ -405,17 +404,17 @@ int main(int argc, char *argv[]) {
       }
 
       // Gather machine-specific upcast buffers for each machine in turn.
-      for (auto &kv : ucast_msgs) {
-	send_counts[kv.first] = kv.second.size() * 3;
-	send_bufs[kv.first] = (uint32_t *)malloc(send_counts[kv.first] * sizeof(uint32_t));
+      for (auto &machine_msgs : ucast_msgs) {
+	send_counts[machine_msgs.first] = machine_msgs.second.size() * 3;
+	send_bufs[machine_msgs.first] = (uint32_t *)malloc(send_counts[machine_msgs.first] * sizeof(uint32_t));
 	int i = 0;
-	for (auto &v : kv.second) {
-	  send_bufs[kv.first][i++] = v.parent;
-	  send_bufs[kv.first][i++] = v.child;
-	  send_bufs[kv.first][i++] = v.group_ct;
+	for (auto &msg: machine_msgs.second) {
+	  send_bufs[machine_msgs.first][i++] = msg.parent;
+	  send_bufs[machine_msgs.first][i++] = msg.child;
+	  send_bufs[machine_msgs.first][i++] = msg.group_ct;
 	}
+	machine_msgs.second.clear();
       }
-      ucast_msgs.clear();
 
       // Exchange broadcast messages between all machines.
       exchange(rank, machines,
@@ -428,17 +427,15 @@ int main(int argc, char *argv[]) {
 	uint32_t parent = recv_buf[i];
 	uint32_t child = recv_buf[i+1];
 	uint32_t group_ct = recv_buf[i+2];
-	//if (V_machine.find(parent) != V_machine.end()) {
-	  V_machine[parent]->neighbors.erase(child);
-	  V_machine[parent]->group_ct += group_ct;
-	  //}
+	V_machine[parent]->neighbors.erase(child);
+	V_machine[parent]->group_ct += group_ct;
       }
       if (recv_buf) free(recv_buf);
 
       // Erase moribund vertices that have sent their
       // respective upcast messages.
       for (auto &v : to_delete) {
-	std::cout << "Deleting " << v << std::endl;
+	if (V_machine[v]) free(V_machine[v]);
 	V_machine.erase(v);
       }
       to_delete.clear();
@@ -451,6 +448,9 @@ int main(int argc, char *argv[]) {
   }
 
   // Clean up.
+  bcast_msgs.clear();
+  ucast_msgs.clear();
+
   if (send_counts) free( send_counts );
   if (recv_counts) free( recv_counts );
   if (recv_displs) free( recv_displs );
