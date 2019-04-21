@@ -73,7 +73,7 @@ void exchange(int rank, int machines,
 
 int main(int argc, char *argv[]) {
   int rank, machines;
-
+  int verbosity = 0;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &machines);
@@ -86,6 +86,9 @@ int main(int argc, char *argv[]) {
     if (!strcmp("-i", argv[a])) {
       a++;
       if (a < argc) fname_in = argv[a];
+    }
+    if (!strcmp("-v", argv[a])) {
+      verbosity = 1;
     }
     a++;
   }
@@ -220,16 +223,18 @@ int main(int argc, char *argv[]) {
 
   free( recv_buf );
 
-  // Debug printout of graph in vertex-centric format.
-  for (int machine = 0; machine < machines; machine++) {
-    if (rank == machine) {
-      for (auto &kv : V_machine) {
-	std::cout << "[" << machine << "]";
-	std::cout << kv.first << ":";
-	for (auto &neighbor : kv.second->neighbors) {
-	  std::cout << " " << neighbor;
+  if (verbosity == 1) {
+    // Debug printout of graph in vertex-centric format.
+    for (int machine = 0; machine < machines; machine++) {
+      if (rank == machine) {
+	for (auto &kv : V_machine) {
+	  std::cout << "[" << machine << "]";
+	  std::cout << kv.first << ":";
+	  for (auto &neighbor : kv.second->neighbors) {
+	    std::cout << " " << neighbor;
+	  }
+	  std::cout << std::endl;
 	}
-	std::cout << std::endl;
       }
     }
   }
@@ -239,8 +244,9 @@ int main(int argc, char *argv[]) {
   uint32_t trees = 0;
   uint32_t *forest = (uint32_t *)malloc(forest_sz);
   memset(forest, 0, forest_sz);
-  int local_done = V_machine.empty();
   int global_done = 0;
+  uint32_t finished = 0;
+  int local_done = V_machine.size() == finished;
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
   std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
@@ -250,35 +256,43 @@ int main(int argc, char *argv[]) {
   }
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   // Continue reducing vertices to forest
-  // until the internal vertex map is empty.
+  // until all internal vertices are marked finished.
   while (!global_done) {
     // Out of room for forest!
     uint32_t trees_off = trees << 3;
     uint32_t bfs_root;
-    if (trees_off = forest_sz) {
+    if (trees_off == forest_sz) {
       // Double the buffer size.
-      forest_sz <<= 1;
-      forest = (uint32_t *)realloc(forest, forest_sz);
-      // Zero out new allocations, preserving prior allocations.
-      memset(forest + trees_off, 0, forest_sz - trees_off);
+      forest_sz = forest_sz << 1;
+      realloc_temp = (uint32_t *)realloc(forest, forest_sz);
+      if (realloc_temp) forest = realloc_temp;
     }
-    // The first element must be ungrouped. Otherwise,
-    // it would have already been removed from the map.
-    bfs_root = V_machine.begin()->first;
-    forest[trees + 1] = 0;
+    // // The first element must be ungrouped. Otherwise,
+    // // it would have already been removed from the map.
+    // bfs_root = V_machine.empty() ? (1 << 31) : V_machine.begin()->first;
+    bfs_root = (1 << 31);
+    for (auto &kv : V_machine) {
+      if (kv.second->state == UNGROUPED) {
+	bfs_root = kv.second->id;
+	break;
+      }
+    }
+    forest[trees*2 + 1] = 0;
     // Elect the minimum vertex id as the BFS tree root.
-    MPI_Allreduce(&bfs_root, &forest[trees],
+    MPI_Allreduce(&bfs_root, &forest[trees*2],
 		  1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
-    bfs_root = forest[trees];
+    // if (bfs_root == 1 << 31) break;
+    bfs_root = forest[trees*2];
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
     if (rank == bfs_root_machine) {
-      V_machine[bfs_root]->state = BROADCAST;
+      vertex_t *r = V_machine[bfs_root];
+      r->state = BROADCAST;
     }
     uint32_t tree_done = 0;
     // Continue flooding until root has received
     // population subtotals from all its children.
-    while (!forest[trees+1]) {
+    while (!forest[trees*2+1]) {
       /*******************
        * Broadcast phase *
        *******************/
