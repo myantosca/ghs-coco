@@ -239,7 +239,8 @@ int main(int argc, char *argv[]) {
   uint32_t trees = 0;
   uint32_t *forest = (uint32_t *)malloc(forest_sz);
   memset(forest, 0, forest_sz);
-
+  int local_done = V_machine.empty();
+  int global_done = 0;
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
   std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
@@ -247,9 +248,10 @@ int main(int argc, char *argv[]) {
     bcast_msgs[machine] = std::unordered_set<uint32_t>();
     ucast_msgs[machine] = std::vector<ucast_msg_t>();
   }
+  MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   // Continue reducing vertices to forest
   // until the internal vertex map is empty.
-  while (!V_machine.empty()) {
+  while (!global_done) {
     // Out of room for forest!
     uint32_t trees_off = trees << 3;
     uint32_t bfs_root;
@@ -273,7 +275,7 @@ int main(int argc, char *argv[]) {
     if (rank == bfs_root_machine) {
       V_machine[bfs_root]->state = BROADCAST;
     }
-
+    uint32_t tree_done = 0;
     // Continue flooding until root has received
     // population subtotals from all its children.
     while (!forest[trees+1]) {
@@ -377,9 +379,8 @@ int main(int argc, char *argv[]) {
 	  u->state == FINISHED;
 	  // Upcast subtree population to parent.
 	  if (u->id == bfs_root) {
-	    // Notify all machines when BFS root is finished.
+	    // Update the tree count.
 	    forest[trees+1] = u->group_ct;
-	    MPI_Bcast(&forest[trees+1], 1, MPI_UNSIGNED, bfs_root_machine, MPI_COMM_WORLD);
 	  }
 	  else {
 	    uint32_t parent_machine = MACHINE_HASH(u->parent);
@@ -439,12 +440,18 @@ int main(int argc, char *argv[]) {
 	V_machine.erase(v);
       }
       to_delete.clear();
+      // Reduce termination condition. If root finishes, the tree count will
+      MPI_Allreduce(&forest[trees + 1], &forest[trees + 1], 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
     }
     trees++;
+    local_done = V_machine.empty();
+    MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   }
 
-  for (int tree = 0; tree < trees; tree+=2) {
-    std::cout << forest[tree] << "," << forest[tree+1] << std::endl;
+  if (rank == 0) {
+    for (int tree = 0; tree < trees; tree+=2) {
+      std::cout << forest[tree] << "," << forest[tree+1] << std::endl;
+    }
   }
 
   // Clean up.
