@@ -153,6 +153,7 @@ int main(int argc, char *argv[]) {
   MPI_File_read(mpi_fp_in, edges_buf, edges << 1, MPI_UNSIGNED, NULL);
   MPI_File_close(&mpi_fp_in);
 
+  uint32_t *realloc_temp;
   // Fill send buffers for edge exchange.
   for (int i = 0; i < edges; i++) {
     // Get u and v from the file buffer.
@@ -164,8 +165,14 @@ int main(int argc, char *argv[]) {
     // Resize machine[u]'s buffer if we're out of room.
     if (send_counts[machine_u] == send_caps[machine_u]) {
       send_caps[machine_u] *= 2;
-      send_bufs[machine_u] = (uint32_t *)realloc(send_bufs[machine_u],
-						 send_caps[machine_u] * sizeof(uint32_t));
+      realloc_temp = (uint32_t *)realloc(send_bufs[machine_u],
+					 send_caps[machine_u] * sizeof(uint32_t));
+      if (realloc_temp) {
+	send_bufs[machine_u] = realloc_temp;
+      }
+      else {
+	exit(errno);
+      }
     }
     // Add (u,v) to buffer to send to machine[u].
     // By convention, the node housed in the machine is first.
@@ -174,8 +181,14 @@ int main(int argc, char *argv[]) {
     // Resize machine[v]'s buffer if we're out of room.
     if (send_counts[machine_v] == send_caps[machine_v]) {
       send_caps[machine_v] *= 2;
-      send_bufs[machine_v] = (uint32_t *)realloc(send_bufs[machine_v],
-						 send_caps[machine_v] * sizeof(uint32_t));
+      realloc_temp = (uint32_t *)realloc(send_bufs[machine_v],
+					 send_caps[machine_v] * sizeof(uint32_t));
+      if (realloc_temp) {
+	send_bufs[machine_v] = realloc_temp;
+      }
+      else {
+	exit(errno);
+      }
     }
     // Add (v,u) to buffer to send to machine[v].
     // By convention, the node housed in the machine is first.
@@ -265,7 +278,12 @@ int main(int argc, char *argv[]) {
       // Double the buffer size.
       forest_sz = forest_sz << 1;
       realloc_temp = (uint32_t *)realloc(forest, forest_sz);
-      if (realloc_temp) forest = realloc_temp;
+      if (realloc_temp) {
+	forest = realloc_temp;
+      }
+      else {
+	exit(errno);
+      }
     }
     // // The first element must be ungrouped. Otherwise,
     // // it would have already been removed from the map.
