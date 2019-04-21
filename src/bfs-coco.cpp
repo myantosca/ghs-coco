@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
 
   int a = 0;
   while (a < argc) {
-    // Output filename argument.
-    if (!strcmp("-o", argv[a])) {
+    // Input filename argument.
+    if (!strcmp("-i", argv[a])) {
       a++;
       if (a < argc) fname_in = argv[a];
     }
