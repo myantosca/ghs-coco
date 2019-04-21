@@ -212,12 +212,12 @@ int main(int argc, char *argv[]) {
   }
 
   // Construct local vertex-centric model.
-  std::map<uint32_t, vertex_t *> V_machine;
+  std::map<uint32_t, vertex_t *> V_in;
   for (int i = 0; i < recv_totals[rank]; i += 2) {
     uint32_t u = recv_buf[i];
     uint32_t v = recv_buf[i+1];
     // If the node has not been created yet, do so.
-    if (V_machine.find(u) == V_machine.end()) {
+    if (V_in.find(u) == V_in.end()) {
       vertex_t *vertex_u = (vertex_t *)malloc(sizeof(vertex_t));
       memset(vertex_u, 0, sizeof(vertex_t));
       vertex_u->id = u;
@@ -227,10 +227,10 @@ int main(int argc, char *argv[]) {
       vertex_u->state = UNGROUPED;
       vertex_u->neighbors = std::unordered_set<uint32_t>();
       vertex_u->neighbors.clear();
-      V_machine[u] = vertex_u;
+      V_in[u] = vertex_u;
     }
     if (u != v) {
-      V_machine[u]->neighbors.insert(v);
+      V_in[u]->neighbors.insert(v);
     }
   }
 
@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
     // Debug printout of graph in vertex-centric format.
     for (int machine = 0; machine < machines; machine++) {
       if (rank == machine) {
-	for (auto &kv : V_machine) {
+	for (auto &kv : V_in) {
 	  std::cout << "[" << machine << "]";
 	  std::cout << kv.first << ":";
 	  for (auto &neighbor : kv.second->neighbors) {
@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
   memset(forest, 0, forest_sz);
   int global_done = 0;
   uint32_t finished = 0;
-  int local_done = V_machine.size() == finished;
+  int local_done = V_in.size() == finished;
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
   std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
@@ -287,9 +287,9 @@ int main(int argc, char *argv[]) {
     }
     // // The first element must be ungrouped. Otherwise,
     // // it would have already been removed from the map.
-    // bfs_root = V_machine.empty() ? (1 << 31) : V_machine.begin()->first;
+    // bfs_root = V_in.empty() ? (1 << 31) : V_in.begin()->first;
     bfs_root = (1 << 31);
-    for (auto &kv : V_machine) {
+    for (auto &kv : V_in) {
       if (kv.second->state == UNGROUPED) {
 	bfs_root = kv.second->id;
 	break;
@@ -304,7 +304,7 @@ int main(int argc, char *argv[]) {
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
     if (rank == bfs_root_machine) {
-      vertex_t *r = V_machine[bfs_root];
+      vertex_t *r = V_in[bfs_root];
       r->state = BROADCAST;
     }
     uint32_t tree_done = 0;
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
       /*******************
        * Broadcast phase *
        *******************/
-      for (auto &kv : V_machine) {
+      for (auto &kv : V_in) {
 	vertex_t *u = kv.second;
 	// If scheduled to broadcast...
 	if (u->state == BROADCAST) {
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
 	    uint32_t child_machine = MACHINE_HASH(child);
 	    // Local delivery
 	    if (rank == child_machine) {
-	      vertex_t *v = V_machine[child];
+	      vertex_t *v = V_in[child];
 	      if (v->state == UNGROUPED) {
 		// If ungrouped, assign parent.
 		v->parent = u->id;
@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
 	uint32_t id_u = recv_buf[i];
 	uint32_t machine_u = MACHINE_HASH(id_u);
 	// Check each node for connection to each remote flooding parent.
-	for (auto &kv : V_machine) {
+	for (auto &kv : V_in) {
 	  vertex_t *v = kv.second;
 	  // If connected...
 	  if (v->neighbors.find(id_u) != v->neighbors.end()) {
@@ -404,11 +404,11 @@ int main(int argc, char *argv[]) {
       /****************
        * Upcast phase *
        ****************/
-      for (auto &kv : V_machine) {
+      for (auto &kv : V_in) {
 	vertex_t *u = kv.second;
 	// If no longer waiting on children...
 	if (u->state == PENDING && u->neighbors.size() == 0) {
-	  u->state == FINISHED;
+	  u->state = FINISHED;
 	  // Upcast subtree population to parent.
 	  if (u->id == bfs_root) {
 	    // Update the tree count.
@@ -419,9 +419,9 @@ int main(int argc, char *argv[]) {
 	    // Local delivery.
 	    if (rank == parent_machine) {
 	      // Subsume group population into parent node.
-	      V_machine[u->parent]->group_ct += u->group_ct;
+	      V_in[u->parent]->group_ct += u->group_ct;
 	      // Decrement parent's awaiting counter.
-	      V_machine[u->parent]->neighbors.erase(u->id);
+	      V_in[u->parent]->neighbors.erase(u->id);
 	    }
 	    // Remote delivery.
 	    else {
@@ -432,7 +432,8 @@ int main(int argc, char *argv[]) {
 	      ucast_msgs[parent_machine].push_back(msg);
 	    }
 	  }
-	  to_delete.insert(kv.first);
+	  finished++;
+	  //to_delete.insert(kv.first);
 	}
       }
 
@@ -460,23 +461,24 @@ int main(int argc, char *argv[]) {
 	uint32_t parent = recv_buf[i];
 	uint32_t child = recv_buf[i+1];
 	uint32_t group_ct = recv_buf[i+2];
-	V_machine[parent]->neighbors.erase(child);
-	V_machine[parent]->group_ct += group_ct;
+	V_in[parent]->neighbors.erase(child);
+	V_in[parent]->group_ct += group_ct;
       }
       if (recv_buf) free(recv_buf);
 
-      // Erase moribund vertices that have sent their
-      // respective upcast messages.
-      for (auto &v : to_delete) {
-	if (V_machine[v]) free(V_machine[v]);
-	V_machine.erase(v);
-      }
-      to_delete.clear();
+      // // Erase moribund vertices that have sent their
+      // // respective upcast messages.
+      // for (auto &v : to_delete) {
+      // 	if (V_in[v]) free(V_in[v]);
+      // 	V_in.erase(v);
+      // }
+      // to_delete.clear();
       // Reduce termination condition.
       MPI_Allreduce(&forest[trees*2 + 1], &forest[trees*2 + 1], 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
     }
     trees++;
-    local_done = V_machine.empty();
+    local_done = V_in.size() == finished;
+    //local_done = V_in.empty();
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   }
 
@@ -495,11 +497,11 @@ int main(int argc, char *argv[]) {
   if (recv_displs) free( recv_displs );
   if (recv_totals) free( recv_totals );
 
-  for (auto &kv : V_machine) {
+  for (auto &kv : V_in) {
     if (kv.second) free(kv.second);
     kv.second = NULL;
   }
-  V_machine.clear();
+  V_in.clear();
   free(forest);
   // Tear down MPI.
   MPI_Finalize();
