@@ -394,7 +394,7 @@ int main(int argc, char *argv[]) {
 	  // Upcast subtree population to parent.
 	  if (u->id == bfs_root) {
 	    // Update the tree count.
-	    forest[trees+1] = u->group_ct;
+	    forest[trees*2+1] = u->group_ct;
 	  }
 	  else {
 	    uint32_t parent_machine = MACHINE_HASH(u->parent);
@@ -454,8 +454,8 @@ int main(int argc, char *argv[]) {
 	V_machine.erase(v);
       }
       to_delete.clear();
-      // Reduce termination condition. If root finishes, the tree count will
-      MPI_Allreduce(&forest[trees + 1], &forest[trees + 1], 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+      // Reduce termination condition.
+      MPI_Allreduce(&forest[trees*2 + 1], &forest[trees*2 + 1], 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
     }
     trees++;
     local_done = V_machine.empty();
