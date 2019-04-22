@@ -374,23 +374,6 @@ int main(int argc, char *argv[]) {
                   v->state = BROADCAST;
                   // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
                   v->neighbors.erase(u->id);
-                  // Remove child from consideration by any other neighbors.
-                  for (auto &id_w : v->neighbors) {
-                    if (id_w != v->parent) {
-                      uint32_t machine_w = MACHINE_HASH(id_w);
-                      if (rank == machine_w) {
-                        vertex_t *w = V_in[id_w];
-                        if (w->neighbors.find(v->id) != w->neighbors.end()) { w->neighbors.erase(v->id); }
-                      }
-                      else {
-                        ucast_msg_t msg;
-                        msg.parent = id_w;
-                        msg.child = v->id;
-                        msg.group_ct = 0;
-                        exchange_info_send_buf_insert(ucast_xinfo, machine_w, (uint32_t *)&msg, 3);
-                      }
-                    }
-                  }
                 }
                 else {
                   // Ignore already grouped neighbors.
@@ -433,23 +416,6 @@ int main(int argc, char *argv[]) {
               v->group = bfs_root;
               // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
               v->neighbors.erase(id_u);
-              // Remove child from consideration by any other neighbors.
-              for (auto &id_w : v->neighbors) {
-                if (id_w != v->parent) {
-                  uint32_t machine_w = MACHINE_HASH(id_w);
-                  if (rank == machine_w) {
-                    vertex_t *w = V_in[id_w];
-                    if (w->neighbors.find(v->id) != w->neighbors.end()) { w->neighbors.erase(v->id); }
-                  }
-                  else {
-                    ucast_msg_t msg;
-                    msg.parent = id_w;
-                    msg.child = v->id;
-                    msg.group_ct = 0;
-                    exchange_info_send_buf_insert(ucast_xinfo, machine_w, (uint32_t *)&msg, 3);
-                  }
-                }
-              }
             }
             // Child already has a parent. Upcast to remove dead link.
             else {
