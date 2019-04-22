@@ -488,8 +488,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (rank == 0) {
-    for (int tree = 0; tree < trees; tree+=2) {
-      std::cout << forest[tree] << "," << forest[tree+1] << std::endl;
+    for (int tree = 0; tree < trees; tree++) {
+      std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
     }
   }
 
