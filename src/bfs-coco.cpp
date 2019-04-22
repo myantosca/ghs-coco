@@ -357,29 +357,25 @@ int main(int argc, char *argv[]) {
             uint32_t machine_v = MACHINE_HASH(id_v);
             // Local delivery
             if (rank == machine_v) {
-              // This check is an implementation necessity
-              // since FINISHED nodes leave the input map.
-              if (V_in.find(id_v) == V_in.end()) {
-                // Node has already moved on to the output map. Remove the dead link.
-                to_delete.insert(id_v);
-              }
-              else {
-                vertex_t *v = V_in[id_v];
-                if (v->state == UNGROUPED) {
-                  // If ungrouped, assign parent.
-                  v->parent = u->id;
-                  // Assign group label.
-                  v->group = u->group;
-                  // Update vertex state.
-                  v->state = BROADCAST;
-                  // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
-                  v->neighbors.erase(u->id);
-                }
-                else {
-                  // Ignore already grouped neighbors.
-                  to_delete.insert(id_v);
-                }
-              }
+	      vertex_t *v = V_in[id_v];
+	      if (v->state == UNGROUPED) {
+		// If ungrouped, assign parent.
+		v->parent = u->id;
+		// Assign group label.
+		v->group = u->group;
+		// Update vertex state.
+		v->state = BROADCAST;
+		// Remove parent from set of neighbors to avoid unnecessary messages in the next round.
+		v->neighbors.erase(u->id);
+	      }
+	      else {
+		// Prep blank upcast message from already grouped neighbor.
+		ucast_msg_t msg;
+		msg.parent = u->id;
+		msg.child = v->id;
+		msg.group_ct = 0;
+		exchange_info_send_buf_insert(ucast_xinfo, rank, (uint32_t *)&msg, 3);
+	      }
             }
             // Remote delivery
             else {
@@ -387,12 +383,6 @@ int main(int argc, char *argv[]) {
               exchange_info_send_buf_insert(bcast_xinfo, machine_v, &u->id, 1);
             }
           }
-
-          // Remove local neighbors that are already grouped (implicit local upcast of 0).
-          for(auto &id_v : to_delete) {
-            if (u->neighbors.find(id_v) != u->neighbors.end()) { u->neighbors.erase(id_v); }
-          }
-          to_delete.clear();
         }
       }
 
