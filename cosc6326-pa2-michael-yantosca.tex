@@ -157,16 +157,91 @@
 
   \subsection{\texttt{genmpig}}{
     \paragraph{}{
+      The same binary file format could easily be generated in a stream-processing fashion
+      for an Erdos-Renyi probabilistic graph. Two variants of the algorithm were created,
+      largely out of a necessity to find a more time-efficient graph generator.
+      Unfortunately, as the names suggest, the latter algorithm sacrificed some
+      correctness for the sake of speed.
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Generate-MPI-Graph}, Distributed Algorithm for Generating an Erdos-Renyi Graph Stored in Compact Edge-Centric Form}
         \begin{algorithmic}
-          \STATE{\TODO}
+          \REQUIRE{$e_B$, edges per output block per machine}
+          \REQUIRE{$p$, the probability of any given edge}
+          \REQUIRE{$n$, the graph population size (nodes)}
+          \REQUIRE{$r$, the process rank}
+          \STATE{Seed a PRNG for a Bernoulli distribution with decision probability $p$.}
+          \STATE{Open the output file for writing each edge $(u,v)$ as <$u$|$v$>.}
+          \FOR{$i \in [0,n-1]$}{
+            \STATE{$u \gets i + r$}
+            \IF{$u < n$}{
+              \STATE{Add an ``edge'' $(u,u)$ to ensure inclusion of $u$ even as a singleton.}
+              \IF{write buffer has reached capacity}{
+                \STATE{Dump the buffer via a shared file pointer.}
+                \STATE{Tare the write buffer offset.}
+              }\ENDIF
+              \STATE{Generates incident edges from $u$ according to Algorithm~\ref{alg:chooselv} or Algorithm~\ref{alg:choosemc}}
+            }\ENDIF
+          }\ENDFOR
+          \STATE{Dump remainder of write buffer if partially full.}
+          \STATE{Wait for final write.}
+          \STATE{Close the output file.}
         \end{algorithmic}
       \end{algorithm}
     }
     \paragraph{}{
-      \TODO
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Choose-Edges-Las-Vegas}, Naive Edge Selection Algorithm with Guaranteed Correctness}
+        \label{alg:chooselv}
+        \begin{algorithmic}
+          \REQUIRE{$u$, the source node label}
+          \REQUIRE{$P_{E}$, a Bernoulli distribution with decision probability $p$}
+          \FOR{$v \in [u + 1, n - 1]$}{
+            \STATE{Take sample $E_{uv}$ from space with distribution $P_{E}$.}
+            \IF{$E_{uv} = 1$}{
+              \STATE{Add <$u$|$v$> to the binary write buffer.}
+              \IF{write buffer has reached capacity}{
+                \STATE{Dump the buffer via a shared file pointer.}
+                \STATE{Tare the write buffer offset.}
+              }\ENDIF
+            }\ENDIF
+          }\ENDFOR
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Choose-Edges-Monte-Carlo}, Time-Efficient Edge Selection Algorithm with Suboptimal Correctness}
+        \label{alg:choosemc}
+        \begin{algorithmic}
+          \REQUIRE{$u$, the source node label}
+          \REQUIRE{$P_v$, a uniform distribution over $[u+1, n-1]$}
+          \REQUIRE{$B_E$, a $Bin(n - 1 - u, p)$ distribution}
+          \STATE{Sample $B_E$ to get a number of successful edge creations $E_u$.}
+          \FOR{$e \in [0, E_u-1]$}{
+            \STATE{$v \gets \text{ a sample from } P_v$}
+            \STATE{Add <$u$|$v$> to the binary write buffer.}
+            \IF{write buffer has reached capacity}{
+              \STATE{Dump the buffer via a shared file pointer.}
+              \STATE{Tare the write buffer offset.}
+            }\ENDIF
+          }\ENDFOR
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      The asymptotic time benefits of Algorithm~\ref{alg:choosemc} over
+      Algorithm~\ref{alg:chooselv} are fairly apparent, particularly when one considers
+      the overhead necessary to generate a combinatorial set of coin flips.
+      However, the use of the uniform distribution to choose an $O(np)$ sequence
+      of numbers runs the risk of sampling duplicate edges. Even when $p = 1$,
+      the algorithm did not always generate a complete graph. A simple shuffle
+      algorithm would be a better choice if not for the onerous \emph{space}
+      requirements at the data scales under consideration.
     }
   }
 
