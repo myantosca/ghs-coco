@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::unordered_set<uint32_t>> bcast_msgs;
   std::map<uint32_t, ucast_msg_t> ucast_msgs;
-
+  std::vector<vertex_t *>bcast_vertices;
   // Read input and distribute to appropriate nodes.
   MPI_File mpi_fp_in = MPI_FILE_NULL;
   MPI_Offset total_buf_sz = 0;
@@ -342,6 +342,7 @@ int main(int argc, char *argv[]) {
     if (rank == bfs_root_machine) {
       vertex_t *r = V_in[bfs_root];
       r->state = BROADCAST;
+      bcast_vertices.push_back(r);
     }
     uint32_t tree_done = 0;
     // Continue flooding until root has received
@@ -350,8 +351,7 @@ int main(int argc, char *argv[]) {
       /*******************
        * Broadcast phase *
        *******************/
-      for (auto &kv : V_in) {
-        vertex_t *u = kv.second;
+      for (vertex *u : bcast_vertices) {
         // If scheduled to broadcast...
         if (u->state == BROADCAST) {
           u->state = PENDING;
@@ -373,11 +373,13 @@ int main(int argc, char *argv[]) {
 
       // Exchange broadcast messages between all machines.
       exchange(bcast_xinfo);
-      exchange_info_rewind(bcast_xinfo);
 
+      // Reset, rewind.
+      exchange_info_rewind(bcast_xinfo);
       for (auto &msg : bcast_msgs) {
 	msg.clear();
       }
+      bcast_vertices.clear();
 
       // Broadcast receipt.
       for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
@@ -395,6 +397,7 @@ int main(int argc, char *argv[]) {
               v->group = bfs_root;
               // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
               v->neighbors.erase(id_u);
+	      bcast_vertices.push_back(v);
             }
             // Child already has a parent. Upcast to remove dead link.
             else {
