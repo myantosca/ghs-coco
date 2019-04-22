@@ -93,6 +93,12 @@ void exchange_info_send_buf_resize(exchange_info_t *info, int machine, int caps)
   }
 }
 
+void exchange_info_rewind(exchange_info_t *info) {
+  for (int machine = 0; machine < info->machines; machine++) {
+    info->send_counts[machine] = 0;
+  }
+}
+
 typedef struct vertex
 {
   uint32_t id;
@@ -101,6 +107,7 @@ typedef struct vertex
   uint32_t group_ct;
   vertex_state_t state;
   std::unordered_set<uint32_t> neighbors;
+  std::unordered_set<uint32_t> children;
 } vertex_t;
 
 typedef struct ucast_msg
@@ -118,12 +125,12 @@ void exchange(exchange_info_t *info) {
   for (int machine = 0; machine < info->machines; machine++) {
     // Determine the receive sub-buffer element counts.
     MPI_Gather(&info->send_counts[machine], 1, MPI_INT,
-	       info->recv_counts, 1, MPI_INT,
-	       machine, MPI_COMM_WORLD);
+               info->recv_counts, 1, MPI_INT,
+               machine, MPI_COMM_WORLD);
     // Only one machine is target of the gather operation at a time.
     if (info->rank == machine) {
       for (int i = 1; i < info->machines; i++) {
-	info->recv_displs[i] = info->recv_displs[i-1] + info->recv_counts[i-1];
+        info->recv_displs[i] = info->recv_displs[i-1] + info->recv_counts[i-1];
       }
       // Calculate the total receive buffer size so each machine knows its extent.
       info->recv_caps = info->recv_counts[info->machines - 1] + info->recv_displs[info->machines - 1];
@@ -135,8 +142,8 @@ void exchange(exchange_info_t *info) {
     // Gather all the targeted send buffers on the target machine
     // in a contiguous array in order by sender rank.
     MPI_Gatherv(info->send_bufs[machine], info->send_counts[machine], MPI_UNSIGNED,
-		info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
-		machine, MPI_COMM_WORLD);
+                info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
+                machine, MPI_COMM_WORLD);
   }
 }
 
@@ -262,6 +269,8 @@ int main(int argc, char *argv[]) {
       vertex_u->state = UNGROUPED;
       vertex_u->neighbors = std::unordered_set<uint32_t>();
       vertex_u->neighbors.clear();
+      vertex_u->children = std::unordered_set<uint32_t>();
+      vertex_u->children.clear();
       V_in[u] = vertex_u;
     }
     if (u != v) {
@@ -276,14 +285,14 @@ int main(int argc, char *argv[]) {
     // Debug printout of graph in vertex-centric format.
     for (int machine = 0; machine < machines; machine++) {
       if (rank == machine) {
-	for (auto &kv : V_in) {
-	  std::cout << "[" << machine << "]";
-	  std::cout << kv.first << ":";
-	  for (auto &neighbor : kv.second->neighbors) {
-	    std::cout << " " << neighbor;
-	  }
-	  std::cout << std::endl;
-	}
+        for (auto &kv : V_in) {
+          std::cout << "[" << machine << "]";
+          std::cout << kv.first << ":";
+          for (auto &neighbor : kv.second->neighbors) {
+            std::cout << " " << neighbor;
+          }
+          std::cout << std::endl;
+        }
       }
     }
   }
@@ -294,18 +303,18 @@ int main(int argc, char *argv[]) {
   uint32_t *forest = (uint32_t *)malloc(forest_sz);
   memset(forest, 0, forest_sz);
   int global_done = 0;
-  uint32_t finished = 0;
-  int local_done = V_in.size() == finished;
+  int local_done = V_in.empty();
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
   std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
+  std::unordered_set<uint32_t> w_delete;
   for (int machine = 0; machine < machines; machine++) {
     bcast_msgs[machine] = std::unordered_set<uint32_t>();
     ucast_msgs[machine] = std::vector<ucast_msg_t>();
   }
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-  // Continue reducing vertices to forest
-  // until all internal vertices are marked finished.
+  // Continue reducing vertices to forest until all internal vertices=
+  // have been moved from the input map to the output map.
   while (!global_done) {
     // Out of room for forest!
     uint32_t trees_off = trees << 3;
@@ -315,27 +324,20 @@ int main(int argc, char *argv[]) {
       forest_sz = forest_sz << 1;
       realloc_temp = (uint32_t *)realloc(forest, forest_sz);
       if (realloc_temp) {
-	forest = realloc_temp;
+        forest = realloc_temp;
       }
       else {
-	exit(errno);
+        exit(errno);
       }
     }
-    // // The first element must be ungrouped. Otherwise,
-    // // it would have already been removed from the map.
-    // bfs_root = V_in.empty() ? (1 << 31) : V_in.begin()->first;
-    bfs_root = (1 << 31);
-    for (auto &kv : V_in) {
-      if (kv.second->state == UNGROUPED) {
-	bfs_root = kv.second->id;
-	break;
-      }
-    }
+    // The first element must be ungrouped. Otherwise,
+    // it would have already been removed from the map.
+    bfs_root = V_in.empty() ? (1 << 31) : V_in.begin()->second->id;
     forest[trees*2 + 1] = 0;
     // Elect the minimum vertex id as the BFS tree root.
     MPI_Allreduce(&bfs_root, &forest[trees*2],
-		  1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
-    // if (bfs_root == 1 << 31) break;
+                  1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
+    if (bfs_root == 1 << 31) break;
     bfs_root = forest[trees*2];
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
@@ -346,163 +348,213 @@ int main(int argc, char *argv[]) {
     uint32_t tree_done = 0;
     // Continue flooding until root has received
     // population subtotals from all its children.
-    while (!forest[trees*2+1]) {
+    while (!tree_done) {
       /*******************
        * Broadcast phase *
        *******************/
       for (auto &kv : V_in) {
-	vertex_t *u = kv.second;
-	// If scheduled to broadcast...
-	if (u->state == BROADCAST) {
-	  u->state = PENDING;
-	  // Broadcast group to children.
-	  to_delete.clear();
-	  for (auto &child : u->neighbors) {
-	    uint32_t child_machine = MACHINE_HASH(child);
-	    // Local delivery
-	    if (rank == child_machine) {
-	      vertex_t *v = V_in[child];
-	      if (v->state == UNGROUPED) {
-		// If ungrouped, assign parent.
-		v->parent = u->id;
-		// Assign group label.
-		v->group = u->group;
-		// Update vertex state.
-		v->state = BROADCAST;
-	      }
-	      else {
-		to_delete.insert(child);
-	      }
-	      // Remove attempted parent regardless of prospective child state.
-	      v->neighbors.erase(u->id);
-	    }
-	    // Remote delivery
-	    else {
-	      // Add sender to machine-specific broadcast pre-buffer.
-	      bcast_msgs[child_machine].insert(u->id);
-	    }
-	  }
-	  for(auto &child : to_delete) {
-	    u->neighbors.erase(child);
-	  }
-	  to_delete.clear();
-	}
+        vertex_t *u = kv.second;
+        // If scheduled to broadcast...
+        if (u->state == BROADCAST) {
+          u->state = PENDING;
+          // Broadcast group to children.
+          to_delete.clear();
+          for (auto &id_v : u->neighbors) {
+            uint32_t machine_v = MACHINE_HASH(id_v);
+            // Local delivery
+            if (rank == machine_v) {
+              // This check is an implementation necessity
+              // since FINISHED nodes leave the input map.
+              if (V_in.find(id_v) == V_in.end()) {
+                // Node has already moved on to the output map. Remove the dead link.
+                to_delete.insert(id_v);
+              }
+              else {
+                vertex_t *v = V_in[id_v];
+                if (v->state == UNGROUPED) {
+                  // If ungrouped, assign parent.
+                  v->parent = u->id;
+                  // Assign group label.
+                  v->group = u->group;
+                  // Update vertex state.
+                  v->state = BROADCAST;
+                  // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
+                  v->neighbors.erase(u->id);
+                  // Remove child from consideration by any other neighbors.
+                  for (auto &id_w : v->neighbors) {
+                    if (id_w != v->parent) {
+                      uint32_t machine_w = MACHINE_HASH(id_w);
+                      if (rank == machine_w) {
+                        vertex_t *w = V_in[id_w];
+                        if (w->neighbors.find(v->id) != w->neighbors.end()) { w->neighbors.erase(v->id); }
+                      }
+                      else {
+                        ucast_msg_t msg;
+                        msg.parent = id_w;
+                        msg.child = v->id;
+                        msg.group_ct = 0;
+                        ucast_msgs[machine_w].push_back(msg);
+                      }
+                    }
+                  }
+                }
+                else {
+                  // Ignore already grouped neighbors.
+                  to_delete.insert(id_v);
+                }
+              }
+            }
+            // Remote delivery
+            else {
+              // Add sender to machine-specific broadcast pre-buffer.
+              bcast_msgs[machine_v].insert(u->id);
+            }
+          }
+
+          // Remove local neighbors that are already grouped (implicit local upcast of 0).
+          for(auto &id_v : to_delete) {
+            if (u->neighbors.find(id_v) != u->neighbors.end()) { u->neighbors.erase(id_v); }
+          }
+          to_delete.clear();
+        }
       }
 
       // Gather machine-specific broadcast buffers for each machine in turn.
       for (auto &machine_msg : bcast_msgs) {
-	bcast_xinfo->send_counts[machine_msg.first] = 0;
-	for (auto &v : machine_msg.second) {
-	  uint32_t id_v = v;
-	  exchange_info_send_buf_insert(bcast_xinfo, machine_msg.first, &id_v, 1);
-	}
-	machine_msg.second.clear();
+        bcast_xinfo->send_counts[machine_msg.first] = 0;
+        for (auto &v : machine_msg.second) {
+          uint32_t id_v = v;
+          exchange_info_send_buf_insert(bcast_xinfo, machine_msg.first, &id_v, 1);
+        }
+        machine_msg.second.clear();
       }
 
       // Exchange broadcast messages between all machines.
       exchange(bcast_xinfo);
+      exchange_info_rewind(bcast_xinfo);
 
       // Perform local receipt of remote flood.
       for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
-	uint32_t id_u = bcast_xinfo->recv_buf[i];
-	uint32_t machine_u = MACHINE_HASH(id_u);
-	// Check each node for connection to each remote flooding parent.
-	for (auto &kv : V_in) {
-	  vertex_t *v = kv.second;
-	  // If connected...
-	  if (v->neighbors.find(id_u) != v->neighbors.end()) {
-	    // Child is ungrouped. Meet your parent!
-	    if (v->state == UNGROUPED) {
-	      v->parent = id_u;
-	      v->state = BROADCAST;
-	      v->group = bfs_root;
-	    }
-	    // Child already has a parent. Upcast to remove dead link.
-	    else {
-	      // No local check is done here since the parent must be remote.
-	      ucast_msg_t msg;
-	      msg.parent = id_u;
-	      msg.child = v->id;
-	      msg.group_ct = 0;
-	      ucast_msgs[machine_u].push_back(msg);
-	    }
-	    // Remove attempted parent regardless of prospective child state.
-	    v->neighbors.erase(id_u);
-	  }
-	}
+        uint32_t id_u = bcast_xinfo->recv_buf[i];
+        uint32_t machine_u = MACHINE_HASH(id_u);
+        // Check each node for connection to each remote flooding parent.
+        for (auto &kv : V_in) {
+          vertex_t *v = kv.second;
+          // If connected...
+          if (v->neighbors.find(id_u) != v->neighbors.end()) {
+            // Child is ungrouped. Meet your parent!
+            if (v->state == UNGROUPED) {
+              v->parent = id_u;
+              v->state = BROADCAST;
+              v->group = bfs_root;
+              // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
+              v->neighbors.erase(id_u);
+              // Remove child from consideration by any other neighbors.
+              for (auto &id_w : v->neighbors) {
+                if (id_w != v->parent) {
+                  uint32_t machine_w = MACHINE_HASH(id_w);
+                  if (rank == machine_w) {
+                    vertex_t *w = V_in[id_w];
+                    if (w->neighbors.find(v->id) != w->neighbors.end()) { w->neighbors.erase(v->id); }
+                  }
+                  else {
+                    ucast_msg_t msg;
+                    msg.parent = id_w;
+                    msg.child = v->id;
+                    msg.group_ct = 0;
+                    ucast_msgs[machine_w].push_back(msg);
+                  }
+                }
+              }
+            }
+            // Child already has a parent. Upcast to remove dead link.
+            else {
+              // No local check is done here since the parent must be remote.
+              ucast_msg_t msg;
+              msg.parent = id_u;
+              msg.child = v->id;
+              msg.group_ct = 0;
+              ucast_msgs[machine_u].push_back(msg);
+            }
+          }
+        }
       }
 
       /****************
        * Upcast phase *
        ****************/
       for (auto &kv : V_in) {
-	vertex_t *u = kv.second;
-	// If no longer waiting on children...
-	if (u->state == PENDING && u->neighbors.size() == 0) {
-	  u->state = FINISHED;
-	  // Upcast subtree population to parent.
-	  if (u->id == bfs_root) {
-	    // Update the tree count.
-	    forest[trees*2+1] = u->group_ct;
-	  }
-	  else {
-	    uint32_t parent_machine = MACHINE_HASH(u->parent);
-	    // Local delivery.
-	    if (rank == parent_machine) {
-	      // Subsume group population into parent node.
-	      V_in[u->parent]->group_ct += u->group_ct;
-	      // Decrement parent's awaiting counter.
-	      V_in[u->parent]->neighbors.erase(u->id);
-	    }
-	    // Remote delivery.
-	    else {
-	      ucast_msg_t msg;
-	      msg.parent = u->parent;
-	      msg.child = u->id;
-	      msg.group_ct = u->group_ct;
-	      ucast_msgs[parent_machine].push_back(msg);
-	    }
-	  }
-	  finished++;
-	  //to_delete.insert(kv.first);
-	}
+        vertex_t *u = kv.second;
+        // If no longer waiting on children...
+        if (u->state == PENDING && u->neighbors.size() == 0) {
+          u->state = FINISHED;
+          // Upcast subtree population to parent.
+          if (u->id == bfs_root) {
+            // Update the tree count.
+            forest[trees*2+1] = u->group_ct;
+          }
+          else {
+            uint32_t parent_machine = MACHINE_HASH(u->parent);
+            // Local delivery.
+            if (rank == parent_machine) {
+              vertex_t *p = V_in[u->parent];
+              // Subsume group population into parent node.
+              p->group_ct += u->group_ct;
+              // Decrement parent's awaiting counter.
+              //if (p->neighbors.find(u->id) != p->neighbors.end()) {
+              if (u->group_ct > 0) p->children.insert(u->id);
+              p->neighbors.erase(u->id);
+              //}
+            }
+            // Remote delivery.
+            else {
+              ucast_msg_t msg;
+              msg.parent = u->parent;
+              msg.child = u->id;
+              msg.group_ct = u->group_ct;
+              ucast_msgs[parent_machine].push_back(msg);
+            }
+          }
+          to_delete.insert(kv.second->id);
+        }
       }
 
       // Gather machine-specific upcast buffers for each machine in turn.
       for (auto &machine_msgs : ucast_msgs) {
-	ucast_xinfo->send_counts[machine_msgs.first] = 0;
-	for (auto &msg : machine_msgs.second) {
-	  exchange_info_send_buf_insert(ucast_xinfo, machine_msgs.first, (uint32_t *)&msg, 3);
-	}
-	machine_msgs.second.clear();
+        ucast_xinfo->send_counts[machine_msgs.first] = 0;
+        for (auto &msg : machine_msgs.second) {
+          exchange_info_send_buf_insert(ucast_xinfo, machine_msgs.first, (uint32_t *)&msg, 3);
+        }
+        machine_msgs.second.clear();
       }
 
       // Exchange upcast messages between all machines.
       exchange(ucast_xinfo);
+      exchange_info_rewind(ucast_xinfo);
 
       // Perform local receipt of remote upcast.
       for (int i = 0; i < ucast_xinfo->recv_caps; i+=3) {
-	uint32_t parent = ucast_xinfo->recv_buf[i];
-	uint32_t child = ucast_xinfo->recv_buf[i+1];
-	uint32_t group_ct = ucast_xinfo->recv_buf[i+2];
-	vertex_t *p = V_in[parent];
-	p->group_ct += group_ct;
+        uint32_t parent = ucast_xinfo->recv_buf[i];
+        uint32_t child = ucast_xinfo->recv_buf[i+1];
+        uint32_t group_ct = ucast_xinfo->recv_buf[i+2];
+        vertex_t *p = V_in[parent];
+        p->group_ct += group_ct;
+        if (group_ct > 0) p->children.insert(child);
+        p->neighbors.erase(child);
       }
-      if (recv_buf) free(recv_buf);
 
-      // // Erase moribund vertices that have sent their
-      // // respective upcast messages.
-      // for (auto &v : to_delete) {
-      // 	if (V_in[v]) free(V_in[v]);
-      // 	V_in.erase(v);
-      // }
-      // to_delete.clear();
+      // Erase moribund vertices that have sent their respective upcast messages.
+      for (auto &v : to_delete) {
+        V_out[v] = V_in[v];
+        V_in.erase(v);
+      }
+      to_delete.clear();
       // Reduce termination condition.
-      MPI_Allreduce(&forest[trees*2 + 1], &forest[trees*2 + 1], 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+      MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+      forest[trees * 2 + 1] = tree_done;
     }
     trees++;
-    local_done = V_in.size() == finished;
-    //local_done = V_in.empty();
+    local_done = V_in.empty();
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   }
 
@@ -524,6 +576,13 @@ int main(int argc, char *argv[]) {
     kv.second = NULL;
   }
   V_in.clear();
+
+  for (auto &kv : V_out) {
+    if (kv.second) free(kv.second);
+    kv.second = NULL;
+  }
+  V_out.clear();
+
   free(forest);
   // Tear down MPI.
   MPI_Finalize();
