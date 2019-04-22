@@ -175,6 +175,7 @@ int main(int argc, char *argv[]) {
     hash_a = hash_b_dist(prng);
   }
 
+  // Distribute hash parameters to all machines.
   MPI_Bcast(&hash_a, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
   MPI_Bcast(&hash_b, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
