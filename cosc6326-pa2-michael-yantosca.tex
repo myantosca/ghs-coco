@@ -89,16 +89,69 @@
 \section{Analysis}{
   \subsection{\texttt{text2mpig}}{
     \paragraph{}{
+      The graph representations available from the SNAP database\autocite{SNAP} are in a textual format
+      over which is difficult to efficiently parallelize data access. Whereas one could serially access
+      the data from a predetermined root node and thereafter distribute it to other participating nodes,
+      the loading time might be reduced if all the nodes could participate in the loading by each focusing
+      on a subset of the data to be loaded. At rest, the vertex-centric model has a disadvantage against
+      the edge-centric model since the variability of node composition in the absence of a guarantee of
+      isomorphism or regularity necessitates additional header information on top of the unevenness of
+      distribution. The optimal distribution of data cannot be determined \emph{a priori} by an unbiased
+      strategy.
+    }
+    \paragraph{}{
+      Conversely, the read load of an edge-centric model can be evenly distributed when
+      encoded in an efficient packed binary format since all edges are symmetric with each
+      other provided that the vertex labels can be expressed in a fixed-width format. It is
+      likely for this reason that the SNAP database provides models as a set of edges. A
+      little preprocessing work up front could yield dividends, even when the algorithm
+      model is vertex-centric. To this end, the \texttt{txt2mpig} utility was created with
+      the additional benefit of a decrease in storage costs at rest since each node label
+      only requires 4 bytes (each edge 8 bytes).
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Text-To-MPI-Graph}, Algorithm for Converting Edge-Centric Text Model to Compact Edge-Centric Form}
         \begin{algorithmic}
-          \STATE{\TODO}
+          \REQUIRE{$e_B$, the number of edges per output block per machine}
+          \REQUIRE{$k$, the number of participating nodes}
+          \REQUIRE{$r$, the participating process rank}
+          \STATE{Open the output file for writing each edge $(u,v)$ as <$u$|$v$>.}
+          \WHILE{\neg \textsc{eof}}{
+            \IF{$r = 0$}{
+              \STATE{Read a line of text.}
+              \IF{the line is of the form ``$u$ $v$''}{
+                \STATE{Add <$u$|$v$> to the binary read buffer.}
+              }\ELSE{
+                \STATE{Discard the line.}
+              }\ENDIF
+              \STATE{Check for \textsc{eof}.}
+            }\ENDIF
+            \STATE{Broadcast the updated read offset to all processes.}
+            \STATE{Broadcast the \textsc{eof} status to all processes.}
+            \IF{read buffer is at capacity ($16e_Bk$ bytes) or \textsc{eof}}{
+              \STATE{Wait for the previous non-blocking write to finish.}
+              \STATE{Scatter the read buffer evenly among all the processes.}
+              \STATE{Start a non-blocking write at an offset linearly scaled by $r$ to avoid contention.}
+              \STATE{Increment the absolute write offset for the next pass.}
+              \STATE{Tare the read buffer offset.}
+            }\ENDIF
+          }\ENDWHILE
+          \STATE{Wait for any outstanding disk writes.}
+          \STATE{Close the output file.}
         \end{algorithmic}
       \end{algorithm}
     }
     \paragraph{}{
-      \TODO
+      The resulting edge-centric binary files exhibited expected compression by virtue
+      of being more efficient on average in terms of label storage.
+      \begin{longtable}{l|c|c}
+        \textbf{Real-World Graph} & \textbf{Text File Size} & \textbf{Binary File Size} \\
+        facebook\_combined & 835K & 690K \\
+        ca-AstroPh & 5.1M & 3.1M \\
+        roadNet-TX & 57M & 30M \\
+      \end{longtable}
     }
   }
 
