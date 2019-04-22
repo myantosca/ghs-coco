@@ -106,6 +106,7 @@ typedef struct vertex
   uint32_t group;
   uint32_t group_ct;
   vertex_state_t state;
+  uint32_t awaiting;
   std::unordered_set<uint32_t> neighbors;
   std::unordered_set<uint32_t> children;
 } vertex_t;
@@ -190,6 +191,9 @@ int main(int argc, char *argv[]) {
   exchange_info_t *bcast_xinfo = exchange_info_new(rank, machines);
   exchange_info_t *ucast_xinfo = exchange_info_new(rank, machines);
 
+  std::vector<std::unordered_set<uint32_t>> bcast_msgs;
+  std::map<uint32_t, ucast_msg_t> ucast_msgs;
+
   // Read input and distribute to appropriate nodes.
   MPI_File mpi_fp_in = MPI_FILE_NULL;
   MPI_Offset total_buf_sz = 0;
@@ -217,6 +221,7 @@ int main(int argc, char *argv[]) {
     if (machine < rank) {
       mpi_fp_in_off += (edges_per_machine + (machine < edges_leftover ? 1 : 0)) << 3;
     }
+    bcast_msgs.push_back(std::unordered_set<uint32_t>());
   }
 
   // Fill edge input buffers.
@@ -304,7 +309,6 @@ int main(int argc, char *argv[]) {
   memset(forest, 0, forest_sz);
   int global_done = 0;
   int local_done = V_in.empty();
-  std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
   std::unordered_set<uint32_t> to_delete;
 
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
@@ -355,42 +359,27 @@ int main(int argc, char *argv[]) {
           to_delete.clear();
           for (auto &id_v : u->neighbors) {
             uint32_t machine_v = MACHINE_HASH(id_v);
-            // Local delivery
-            if (rank == machine_v) {
-	      vertex_t *v = V_in[id_v];
-	      if (v->state == UNGROUPED) {
-		// If ungrouped, assign parent.
-		v->parent = u->id;
-		// Assign group label.
-		v->group = u->group;
-		// Update vertex state.
-		v->state = BROADCAST;
-		// Remove parent from set of neighbors to avoid unnecessary messages in the next round.
-		v->neighbors.erase(u->id);
-	      }
-	      else {
-		// Prep blank upcast message from already grouped neighbor.
-		ucast_msg_t msg;
-		msg.parent = u->id;
-		msg.child = v->id;
-		msg.group_ct = 0;
-		exchange_info_send_buf_insert(ucast_xinfo, rank, (uint32_t *)&msg, 3);
-	      }
-            }
-            // Remote delivery
-            else {
-              // Add sender to machine-specific broadcast pre-buffer.
-              exchange_info_send_buf_insert(bcast_xinfo, machine_v, &u->id, 1);
-            }
+	    bcast_msgs[machine_v].insert(u->id);
           }
         }
+      }
+
+      for (int machine = 0; machine < machines; machine++) {
+	for (auto &u : bcast_msgs[machine]) {
+	  uint32_t id_u = u;
+	  exchange_info_send_buf_insert(bcast_xinfo, machine, &id_u, 1);
+	}
       }
 
       // Exchange broadcast messages between all machines.
       exchange(bcast_xinfo);
       exchange_info_rewind(bcast_xinfo);
 
-      // Perform local receipt of remote flood.
+      for (auto &msg : bcast_msgs) {
+	msg.clear();
+      }
+
+      // Broadcast receipt.
       for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
         uint32_t id_u = bcast_xinfo->recv_buf[i];
         uint32_t machine_u = MACHINE_HASH(id_u);
@@ -409,7 +398,6 @@ int main(int argc, char *argv[]) {
             }
             // Child already has a parent. Upcast to remove dead link.
             else {
-              // No local check is done here since the parent must be remote.
               ucast_msg_t msg;
               msg.parent = id_u;
               msg.child = v->id;
@@ -435,23 +423,11 @@ int main(int argc, char *argv[]) {
           }
           else {
             uint32_t parent_machine = MACHINE_HASH(u->parent);
-            // Local delivery.
-            if (rank == parent_machine) {
-              vertex_t *p = V_in[u->parent];
-              // Subsume group population into parent node.
-              p->group_ct += u->group_ct;
-              // Decrement parent's awaiting counter.
-              if (u->group_ct > 0) p->children.insert(u->id);
-              p->neighbors.erase(u->id);
-            }
-            // Remote delivery.
-            else {
-              ucast_msg_t msg;
-              msg.parent = u->parent;
-              msg.child = u->id;
-              msg.group_ct = u->group_ct;
-	      exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
-            }
+	    ucast_msg_t msg;
+	    msg.parent = u->parent;
+	    msg.child = u->id;
+	    msg.group_ct = u->group_ct;
+	    exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
           }
           to_delete.insert(u->id);
         }
