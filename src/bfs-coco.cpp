@@ -21,6 +21,78 @@ typedef enum {
 } vertex_state_t;
 
 
+typedef struct exchange_info
+{
+  int rank;
+  int machines;
+  int *send_counts;
+  int *send_caps;
+  uint32_t **send_bufs;
+  int *recv_counts;
+  int *recv_displs;
+  int recv_caps;
+  uint32_t *recv_buf;
+} exchange_info_t;
+
+exchange_info_t *exchange_info_new(int rank, int machines) {
+  exchange_info_t *info = (exchange_info_t *)malloc(sizeof(exchange_info_t));
+  info->rank = rank;
+  info->machines = machines;
+  info->send_counts = (int *)malloc(info->machines * sizeof(int));
+  memset(info->send_counts, 0, info->machines * sizeof(int));
+  info->send_caps = (int *)malloc(info->machines * sizeof(int));
+  memset(info->send_caps, 0, info->machines * sizeof(int));
+  info->send_bufs = (uint32_t**)malloc(info->machines * sizeof(uint32_t *));
+  memset(info->send_bufs, 0, info->machines * sizeof(uint32_t *));
+  info->recv_counts = (int *)malloc(info->machines * sizeof(int));
+  memset(info->recv_counts, 0, info->machines * sizeof(int));
+  info->recv_displs = (int *)malloc(info->machines * sizeof(int));
+  memset(info->recv_displs, 0, info->machines * sizeof(int));
+  info->recv_caps = 0;
+  info->recv_buf = NULL;
+  return info;
+}
+
+void exchange_info_free(exchange_info_t *info) {
+  if (info) {
+    if (info->send_counts) { free(info->send_counts); }
+    if (info->send_caps)   { free(info->send_caps); }
+    if (info->send_bufs)   { free(info->send_bufs); }
+    if (info->recv_counts) { free(info->recv_counts); }
+    if (info->recv_displs) { free(info->recv_displs); }
+    if (info->recv_buf)    { free(info->recv_buf); }
+    free(info);
+  }
+}
+
+void exchange_info_send_buf_insert(exchange_info_t *info, int machine, uint32_t *vals, int count) {
+  if (info->send_counts[machine] + count > info->send_caps[machine]) {
+    info->send_caps[machine] += count * 2;
+    uint32_t *tmp = (uint32_t *)realloc(info->send_bufs[machine], info->send_caps[machine] * sizeof(uint32_t));
+    if (tmp) {
+      info->send_bufs[machine] = tmp;
+    }
+    else {
+      exit(errno);
+    }
+  }
+  memcpy(&(info->send_bufs[machine][info->send_counts[machine]]), vals, count * sizeof(uint32_t));
+  info->send_counts[machine] += count;
+}
+
+void exchange_info_send_buf_resize(exchange_info_t *info, int machine, int caps) {
+  if (caps > info->send_caps[machine]) {
+    uint32_t *tmp = (uint32_t *)realloc(info->send_bufs[machine], caps * sizeof(uint32_t));
+    if (tmp) {
+      info->send_bufs[machine] = tmp;
+      info->send_caps[machine] = caps;
+    }
+    else {
+      exit(errno);
+    }
+  }
+}
+
 typedef struct vertex
 {
   uint32_t id;
