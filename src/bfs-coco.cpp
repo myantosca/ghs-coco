@@ -305,13 +305,8 @@ int main(int argc, char *argv[]) {
   int global_done = 0;
   int local_done = V_in.empty();
   std::map <int, std::unordered_set<uint32_t>> bcast_msgs;
-  std::map <int, std::vector<ucast_msg_t>> ucast_msgs;
   std::unordered_set<uint32_t> to_delete;
-  std::unordered_set<uint32_t> w_delete;
-  for (int machine = 0; machine < machines; machine++) {
-    bcast_msgs[machine] = std::unordered_set<uint32_t>();
-    ucast_msgs[machine] = std::vector<ucast_msg_t>();
-  }
+
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   // Continue reducing vertices to forest until all internal vertices=
   // have been moved from the input map to the output map.
@@ -337,7 +332,6 @@ int main(int argc, char *argv[]) {
     // Elect the minimum vertex id as the BFS tree root.
     MPI_Allreduce(&bfs_root, &forest[trees*2],
                   1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
-    if (bfs_root == 1 << 31) break;
     bfs_root = forest[trees*2];
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
@@ -393,7 +387,7 @@ int main(int argc, char *argv[]) {
                         msg.parent = id_w;
                         msg.child = v->id;
                         msg.group_ct = 0;
-                        ucast_msgs[machine_w].push_back(msg);
+                        exchange_info_send_buf_insert(ucast_xinfo, machine_w, (uint32_t *)&msg, 3);
                       }
                     }
                   }
@@ -407,7 +401,7 @@ int main(int argc, char *argv[]) {
             // Remote delivery
             else {
               // Add sender to machine-specific broadcast pre-buffer.
-              bcast_msgs[machine_v].insert(u->id);
+              exchange_info_send_buf_insert(bcast_xinfo, machine_v, &u->id, 1);
             }
           }
 
@@ -417,16 +411,6 @@ int main(int argc, char *argv[]) {
           }
           to_delete.clear();
         }
-      }
-
-      // Gather machine-specific broadcast buffers for each machine in turn.
-      for (auto &machine_msg : bcast_msgs) {
-        bcast_xinfo->send_counts[machine_msg.first] = 0;
-        for (auto &v : machine_msg.second) {
-          uint32_t id_v = v;
-          exchange_info_send_buf_insert(bcast_xinfo, machine_msg.first, &id_v, 1);
-        }
-        machine_msg.second.clear();
       }
 
       // Exchange broadcast messages between all machines.
@@ -462,7 +446,7 @@ int main(int argc, char *argv[]) {
                     msg.parent = id_w;
                     msg.child = v->id;
                     msg.group_ct = 0;
-                    ucast_msgs[machine_w].push_back(msg);
+                    exchange_info_send_buf_insert(ucast_xinfo, machine_w, (uint32_t *)&msg, 3);
                   }
                 }
               }
@@ -474,7 +458,7 @@ int main(int argc, char *argv[]) {
               msg.parent = id_u;
               msg.child = v->id;
               msg.group_ct = 0;
-              ucast_msgs[machine_u].push_back(msg);
+	      exchange_info_send_buf_insert(ucast_xinfo, machine_u, (uint32_t *)&msg, 3);
             }
           }
         }
@@ -512,20 +496,11 @@ int main(int argc, char *argv[]) {
               msg.parent = u->parent;
               msg.child = u->id;
               msg.group_ct = u->group_ct;
-              ucast_msgs[parent_machine].push_back(msg);
+	      exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
             }
           }
-          to_delete.insert(kv.second->id);
+          to_delete.insert(u->id);
         }
-      }
-
-      // Gather machine-specific upcast buffers for each machine in turn.
-      for (auto &machine_msgs : ucast_msgs) {
-        ucast_xinfo->send_counts[machine_msgs.first] = 0;
-        for (auto &msg : machine_msgs.second) {
-          exchange_info_send_buf_insert(ucast_xinfo, machine_msgs.first, (uint32_t *)&msg, 3);
-        }
-        machine_msgs.second.clear();
       }
 
       // Exchange upcast messages between all machines.
@@ -565,9 +540,6 @@ int main(int argc, char *argv[]) {
   }
 
   // Clean up.
-  bcast_msgs.clear();
-  ucast_msgs.clear();
-
   if (bcast_xinfo) exchange_info_free(bcast_xinfo);
   if (ucast_xinfo) exchange_info_free(ucast_xinfo);
 
