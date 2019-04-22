@@ -451,10 +451,8 @@ int main(int argc, char *argv[]) {
               // Subsume group population into parent node.
               p->group_ct += u->group_ct;
               // Decrement parent's awaiting counter.
-              //if (p->neighbors.find(u->id) != p->neighbors.end()) {
               if (u->group_ct > 0) p->children.insert(u->id);
               p->neighbors.erase(u->id);
-              //}
             }
             // Remote delivery.
             else {
