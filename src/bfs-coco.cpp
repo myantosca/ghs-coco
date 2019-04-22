@@ -110,35 +110,32 @@ typedef struct ucast_msg
   uint32_t group_ct;
 } ucast_msg_t;
 
-void exchange(int rank, int machines,
-	      int *send_counts, MPI_Datatype send_type, uint32_t **send_bufs,
-	      int *recv_counts, int *recv_displs, int *recv_totals,
-	      MPI_Datatype recv_type, uint32_t **recv_buf) {
-  memset(recv_counts, 0, sizeof(int) * machines);
-  memset(recv_displs, 0, sizeof(int) * machines);
+void exchange(exchange_info_t *info) {
+  memset(info->recv_counts, 0, sizeof(int) * info->machines);
+  memset(info->recv_displs, 0, sizeof(int) * info->machines);
   // Gather for each machine in turn from every other machine's
   // targeted send buffers.
-  for (int machine = 0; machine < machines; machine++) {
+  for (int machine = 0; machine < info->machines; machine++) {
     // Determine the receive sub-buffer element counts.
-    MPI_Gather(&send_counts[machine], 1, MPI_INT,
-	       recv_counts, 1, MPI_INT,
+    MPI_Gather(&info->send_counts[machine], 1, MPI_INT,
+	       info->recv_counts, 1, MPI_INT,
 	       machine, MPI_COMM_WORLD);
     // Only one machine is target of the gather operation at a time.
-    if (rank == machine) {
-      for (int i = 1; i < machines; i++) {
-	recv_displs[i] = recv_displs[i-1] + recv_counts[i-1];
+    if (info->rank == machine) {
+      for (int i = 1; i < info->machines; i++) {
+	info->recv_displs[i] = info->recv_displs[i-1] + info->recv_counts[i-1];
       }
       // Calculate the total receive buffer size so each machine knows its extent.
-      recv_totals[machine] = recv_counts[machines - 1] + recv_displs[machines - 1];
+      info->recv_caps = info->recv_counts[info->machines - 1] + info->recv_displs[info->machines - 1];
       // Allocate the receive buffer according to the calculated size.
-      *recv_buf = (uint32_t *)malloc(recv_totals[machine] * sizeof(uint32_t));
+      info->recv_buf = (uint32_t *)malloc(info->recv_caps * sizeof(uint32_t));
       // Zero out the receive buffer as a matter of safety.
-      memset(*recv_buf, 0, recv_totals[machine] * sizeof(uint32_t));
+      memset(info->recv_buf, 0, info->recv_caps * sizeof(uint32_t));
     }
     // Gather all the targeted send buffers on the target machine
     // in a contiguous array in order by sender rank.
-    MPI_Gatherv(send_bufs[machine], send_counts[machine], MPI_UNSIGNED,
-		*recv_buf, recv_counts, recv_displs, MPI_UNSIGNED,
+    MPI_Gatherv(info->send_bufs[machine], info->send_counts[machine], MPI_UNSIGNED,
+		info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
 		machine, MPI_COMM_WORLD);
   }
 }
@@ -180,12 +177,10 @@ int main(int argc, char *argv[]) {
 
   MPI_Bcast(&hash_a, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
   MPI_Bcast(&hash_b, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-  // Non-uniform gather info.
-  int *send_counts = (int *)malloc(machines * sizeof(int));
-  int *recv_counts = (int *)malloc(machines * sizeof(int));
-  int *recv_displs = (int *)malloc(machines * sizeof(int));
-  int *recv_totals = (int *)malloc(machines * sizeof(int));
-  uint32_t *recv_buf = NULL;
+
+  exchange_info_t *edges_xinfo = exchange_info_new(rank, machines);
+  exchange_info_t *bcast_xinfo = exchange_info_new(rank, machines);
+  exchange_info_t *ucast_xinfo = exchange_info_new(rank, machines);
 
   // Read input and distribute to appropriate nodes.
   MPI_File mpi_fp_in = MPI_FILE_NULL;
@@ -204,16 +199,12 @@ int main(int argc, char *argv[]) {
 
   uint32_t *edges_buf = (uint32_t *)malloc(edges_buf_sz);
   memset(edges_buf, 0, edges_buf_sz);
-  int *send_caps = (int *)malloc(machines * sizeof(int));
-  uint32_t **send_bufs = (uint32_t **)malloc(machines * sizeof(uint32_t **));
-  memset(send_bufs, 0, machines * sizeof(uint32_t **));
   size_t mpi_fp_in_off = 0;
 
   // Initialize send buffers for edge exchange.
   for (int machine = 0; machine < machines; machine++) {
-    send_bufs[machine] = (uint32_t *)malloc(2 * sizeof(uint32_t));
-    send_caps[machine] = 2;
-    send_counts[machine] = 0;
+    exchange_info_send_buf_resize(edges_xinfo, machine, 2);
+    edges_xinfo->send_counts[machine] = 0;
     // Increment the file read start offset for this rank.
     if (machine < rank) {
       mpi_fp_in_off += (edges_per_machine + (machine < edges_leftover ? 1 : 0)) << 3;
@@ -229,65 +220,36 @@ int main(int argc, char *argv[]) {
   // Fill send buffers for edge exchange.
   for (int i = 0; i < edges; i++) {
     // Get u and v from the file buffer.
-    uint32_t u = edges_buf[i*2];
-    uint32_t v = edges_buf[i*2+1];
+    uint32_t uv[2];
+    uv[0] = edges_buf[i*2];
+    uv[1] = edges_buf[i*2+1];
+    uint32_t vu[2];
+    vu[0] = uv[1];
+    vu[1] = uv[0];
     // Determine the machines housing u and v.
-    uint64_t machine_u = MACHINE_HASH(u);
-    uint64_t machine_v = MACHINE_HASH(v);
-    // Resize machine[u]'s buffer if we're out of room.
-    if (send_counts[machine_u] == send_caps[machine_u]) {
-      send_caps[machine_u] *= 2;
-      realloc_temp = (uint32_t *)realloc(send_bufs[machine_u],
-					 send_caps[machine_u] * sizeof(uint32_t));
-      if (realloc_temp) {
-	send_bufs[machine_u] = realloc_temp;
-      }
-      else {
-	exit(errno);
-      }
-    }
+    uint64_t machine_u = MACHINE_HASH(uv[0]);
+    uint64_t machine_v = MACHINE_HASH(uv[1]);
     // Add (u,v) to buffer to send to machine[u].
     // By convention, the node housed in the machine is first.
-    send_bufs[machine_u][send_counts[machine_u]++] = u;
-    send_bufs[machine_u][send_counts[machine_u]++] = v;
-    // Resize machine[v]'s buffer if we're out of room.
-    if (send_counts[machine_v] == send_caps[machine_v]) {
-      send_caps[machine_v] *= 2;
-      realloc_temp = (uint32_t *)realloc(send_bufs[machine_v],
-					 send_caps[machine_v] * sizeof(uint32_t));
-      if (realloc_temp) {
-	send_bufs[machine_v] = realloc_temp;
-      }
-      else {
-	exit(errno);
-      }
-    }
+    exchange_info_send_buf_insert(edges_xinfo, machine_u, uv, 2);
+
     // Add (v,u) to buffer to send to machine[v].
     // By convention, the node housed in the machine is first.
-    send_bufs[machine_v][send_counts[machine_v]++] = v;
-    send_bufs[machine_v][send_counts[machine_v]++] = u;
+    exchange_info_send_buf_insert(edges_xinfo, machine_v, vu, 2);
   }
 
   // Clean up so as to not hoard memory.
   free(edges_buf);
 
   // Exchange edges.
-  exchange(rank, machines,
-	   send_counts, MPI_UNSIGNED, send_bufs,
-	   recv_counts, recv_displs, recv_totals,
-	   MPI_UNSIGNED, &recv_buf);
-
-  // Clean up so as to not hoard memory.
-  if (send_caps) free( send_caps );
-  for (int machine = 0; machine < machines; machine++) {
-    if (send_bufs[machine]) free( send_bufs[machine] );
-  }
+  exchange(edges_xinfo);
 
   // Construct local vertex-centric model.
   std::map<uint32_t, vertex_t *> V_in;
-  for (int i = 0; i < recv_totals[rank]; i += 2) {
-    uint32_t u = recv_buf[i];
-    uint32_t v = recv_buf[i+1];
+  std::map<uint32_t, vertex_t *> V_out;
+  for (int i = 0; i < edges_xinfo->recv_caps; i += 2) {
+    uint32_t u = edges_xinfo->recv_buf[i];
+    uint32_t v = edges_xinfo->recv_buf[i+1];
     // If the node has not been created yet, do so.
     if (V_in.find(u) == V_in.end()) {
       vertex_t *vertex_u = (vertex_t *)malloc(sizeof(vertex_t));
@@ -306,7 +268,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  free( recv_buf );
+  // Clean up so as not hoard memory.
+  exchange_info_free(edges_xinfo);
 
   if (verbosity == 1) {
     // Debug printout of graph in vertex-centric format.
@@ -427,24 +390,20 @@ int main(int argc, char *argv[]) {
 
       // Gather machine-specific broadcast buffers for each machine in turn.
       for (auto &machine_msg : bcast_msgs) {
-	send_counts[machine_msg.first] = machine_msg.second.size();
-	send_bufs[machine_msg.first] = (uint32_t *)malloc(send_counts[machine_msg.first] * sizeof(uint32_t));
-	int i = 0;
+	bcast_xinfo->send_counts[machine_msg.first] = 0;
 	for (auto &v : machine_msg.second) {
-	  send_bufs[machine_msg.first][i++] = v;
+	  uint32_t id_v = v;
+	  exchange_info_send_buf_insert(bcast_xinfo, machine_msg.first, &id_v, 1);
 	}
 	machine_msg.second.clear();
       }
 
       // Exchange broadcast messages between all machines.
-      exchange(rank, machines,
-	       send_counts, MPI_UNSIGNED, send_bufs,
-	       recv_counts, recv_displs, recv_totals,
-	       MPI_UNSIGNED, &recv_buf);
+      exchange(bcast_xinfo);
 
       // Perform local receipt of remote flood.
-      for (int i = 0; i < recv_totals[rank]; i++) {
-	uint32_t id_u = recv_buf[i];
+      for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
+	uint32_t id_u = bcast_xinfo->recv_buf[i];
 	uint32_t machine_u = MACHINE_HASH(id_u);
 	// Check each node for connection to each remote flooding parent.
 	for (auto &kv : V_in) {
@@ -471,7 +430,6 @@ int main(int argc, char *argv[]) {
 	  }
 	}
       }
-      if (recv_buf) free(recv_buf);
 
       /****************
        * Upcast phase *
@@ -511,30 +469,23 @@ int main(int argc, char *argv[]) {
 
       // Gather machine-specific upcast buffers for each machine in turn.
       for (auto &machine_msgs : ucast_msgs) {
-	send_counts[machine_msgs.first] = machine_msgs.second.size() * 3;
-	send_bufs[machine_msgs.first] = (uint32_t *)malloc(send_counts[machine_msgs.first] * sizeof(uint32_t));
-	int i = 0;
-	for (auto &msg: machine_msgs.second) {
-	  send_bufs[machine_msgs.first][i++] = msg.parent;
-	  send_bufs[machine_msgs.first][i++] = msg.child;
-	  send_bufs[machine_msgs.first][i++] = msg.group_ct;
+	ucast_xinfo->send_counts[machine_msgs.first] = 0;
+	for (auto &msg : machine_msgs.second) {
+	  exchange_info_send_buf_insert(ucast_xinfo, machine_msgs.first, (uint32_t *)&msg, 3);
 	}
 	machine_msgs.second.clear();
       }
 
-      // Exchange broadcast messages between all machines.
-      exchange(rank, machines,
-	       send_counts, MPI_UNSIGNED, send_bufs,
-	       recv_counts, recv_displs, recv_totals,
-	       MPI_UNSIGNED, &recv_buf);
+      // Exchange upcast messages between all machines.
+      exchange(ucast_xinfo);
 
       // Perform local receipt of remote upcast.
-      for (int i = 0; i < recv_totals[rank]; i+=3) {
-	uint32_t parent = recv_buf[i];
-	uint32_t child = recv_buf[i+1];
-	uint32_t group_ct = recv_buf[i+2];
-	V_in[parent]->neighbors.erase(child);
-	V_in[parent]->group_ct += group_ct;
+      for (int i = 0; i < ucast_xinfo->recv_caps; i+=3) {
+	uint32_t parent = ucast_xinfo->recv_buf[i];
+	uint32_t child = ucast_xinfo->recv_buf[i+1];
+	uint32_t group_ct = ucast_xinfo->recv_buf[i+2];
+	vertex_t *p = V_in[parent];
+	p->group_ct += group_ct;
       }
       if (recv_buf) free(recv_buf);
 
@@ -564,10 +515,8 @@ int main(int argc, char *argv[]) {
   bcast_msgs.clear();
   ucast_msgs.clear();
 
-  if (send_counts) free( send_counts );
-  if (recv_counts) free( recv_counts );
-  if (recv_displs) free( recv_displs );
-  if (recv_totals) free( recv_totals );
+  if (bcast_xinfo) exchange_info_free(bcast_xinfo);
+  if (ucast_xinfo) exchange_info_free(ucast_xinfo);
 
   for (auto &kv : V_in) {
     if (kv.second) free(kv.second);
