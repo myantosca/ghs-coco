@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
 
   // Construct local vertex-centric model.
   std::map<uint32_t, vertex_t *> V_in;
-  std::map<uint32_t, vertex_t *> V_out;
+  std::vector<vertex_t *> V_out;
   std::map<uint32_t, std::unordered_set<uint32_t>> E_incoming;
   for (int i = 0; i < edges_xinfo->recv_caps; i += 2) {
     uint32_t u = edges_xinfo->recv_buf[i];
@@ -443,7 +443,8 @@ int main(int argc, char *argv[]) {
 	    msg.group_ct = u->group_ct;
 	    exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
           }
-          finished.insert(u->id);
+          V_out.push_back(u);
+	  finished.insert(u->id);
         }
       }
 
@@ -468,7 +469,6 @@ int main(int argc, char *argv[]) {
 
       // Move finished vertices to the output map.
       for (auto &v : finished) {
-        V_out[v] = V_in[v];
         V_in.erase(v);
       }
       finished.clear();
@@ -494,9 +494,8 @@ int main(int argc, char *argv[]) {
   }
   V_in.clear();
 
-  for (auto &kv : V_out) {
-    if (kv.second) free(kv.second);
-    kv.second = NULL;
+  for (auto &v : V_out) {
+    if (v) free(v);
   }
   V_out.clear();
 
