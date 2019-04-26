@@ -273,6 +273,7 @@ int main(int argc, char *argv[]) {
       vertex_u->group = u;
       vertex_u->group_ct = 1; // population of BFS sub-tree including itself
       vertex_u->state = UNGROUPED;
+      vertex_u->awaiting = 0;
       vertex_u->neighbors = std::unordered_set<uint32_t>();
       vertex_u->neighbors.clear();
       vertex_u->children = std::unordered_set<uint32_t>();
@@ -281,6 +282,7 @@ int main(int argc, char *argv[]) {
     }
     if (u != v) {
       vertex_u->neighbors.insert(v);
+      vertex_u->awaiting++;
     }
   }
 
@@ -396,8 +398,6 @@ int main(int argc, char *argv[]) {
               v->parent = id_u;
               v->state = BROADCAST;
               v->group = bfs_root;
-              // Remove parent from set of neighbors to avoid unnecessary messages in the next round.
-              v->neighbors.erase(id_u);
 	      bcast_vertices.push_back(v);
             }
             // Child already has a parent. Upcast to remove dead link.
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
       for (auto &kv : V_in) {
         vertex_t *u = kv.second;
         // If no longer waiting on children...
-        if (u->state == PENDING && u->neighbors.size() == 0) {
+        if (u->state == PENDING && u->awaiting == 0) {
           u->state = FINISHED;
           // Upcast subtree population to parent.
           if (u->id == bfs_root) {
@@ -448,8 +448,8 @@ int main(int argc, char *argv[]) {
         uint32_t group_ct = ucast_xinfo->recv_buf[i+2];
         vertex_t *p = V_in[parent];
         p->group_ct += group_ct;
-        if (group_ct > 0) p->children.insert(child);
-        p->neighbors.erase(child);
+        if (group_ct > 0) { p->children.insert(child); }
+	p->awaiting--;
       }
 
       // Reduce termination condition. Implicit synchronization point.
