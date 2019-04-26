@@ -160,6 +160,7 @@ void exchange(exchange_info_t *info, uint64_t *messages) {
 
 int main(int argc, char *argv[]) {
   int rank, machines;
+  uint32_t local_vertices = 0, global_vertices = 0;
   uint64_t messages = 0, rounds = 0;
   int verbosity = 0;
   MPI_Init(&argc, &argv);
@@ -310,6 +311,9 @@ int main(int argc, char *argv[]) {
 
   // Clean up so as not hoard memory.
   exchange_info_free(edges_xinfo);
+
+  // Get local stats.
+  local_vertices = V_in.size();
 
   // Capture finishing time for preprocessing.
   time_point<system_clock, nanoseconds> tp_prep_b = system_clock::now();
@@ -508,6 +512,7 @@ int main(int argc, char *argv[]) {
   int64_t T[2] = { (tp_prep_b - tp_prep_a).count(), (tp_coco_b - tp_coco_a).count() };
   int64_t T0[2] = { 0, 0 };
   MPI_Reduce(&T, &T0, 2, MPI_UNSIGNED_LONG, MPI_MAX, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&local_vertices, &global_vertices, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
   if (rank == 0) {
     for (int tree = 0; tree < trees; tree++) {
       std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
