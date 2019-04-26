@@ -121,16 +121,18 @@ typedef struct ucast_msg
   uint32_t group_ct;
 } ucast_msg_t;
 
-void exchange(exchange_info_t *info) {
+void exchange(exchange_info_t *info, uint64_t *messages) {
   memset(info->recv_counts, 0, sizeof(int) * info->machines);
   memset(info->recv_displs, 0, sizeof(int) * info->machines);
   // Gather for each machine in turn from every other machine's
   // targeted send buffers.
+  int received = 0;
   for (int machine = 0; machine < info->machines; machine++) {
     // Determine the receive sub-buffer element counts.
     MPI_Gather(&info->send_counts[machine], 1, MPI_INT,
                info->recv_counts, 1, MPI_INT,
                machine, MPI_COMM_WORLD);
+    *messages += info->machines;
     // Only one machine is target of the gather operation at a time.
     if (info->rank == machine) {
       for (int i = 1; i < info->machines; i++) {
@@ -138,21 +140,27 @@ void exchange(exchange_info_t *info) {
       }
       // Calculate the total receive buffer size so each machine knows its extent.
       info->recv_caps = info->recv_counts[info->machines - 1] + info->recv_displs[info->machines - 1];
+      received = info->recv_caps;
       // Allocate the receive buffer according to the calculated size.
       info->recv_buf = (uint32_t *)malloc(info->recv_caps * sizeof(uint32_t));
       // Zero out the receive buffer as a matter of safety.
       memset(info->recv_buf, 0, info->recv_caps * sizeof(uint32_t));
     }
+    // Make sure everyone knows the total messages in this gather for accounting.
+    MPI_Bcast(&received, 1, MPI_INT, machine, MPI_COMM_WORLD);
+    *messages += info->machines;
     // Gather all the targeted send buffers on the target machine
     // in a contiguous array in order by sender rank.
     MPI_Gatherv(info->send_bufs[machine], info->send_counts[machine], MPI_UNSIGNED,
                 info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
                 machine, MPI_COMM_WORLD);
+    *messages += received;
   }
 }
 
 int main(int argc, char *argv[]) {
   int rank, machines;
+  uint64_t messages = 0, rounds = 0;
   int verbosity = 0;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -261,7 +269,7 @@ int main(int argc, char *argv[]) {
   free(edges_buf);
 
   // Exchange edges.
-  exchange(edges_xinfo);
+  exchange(edges_xinfo, &messages);
 
   // Construct local vertex-centric model.
   std::map<uint32_t, vertex_t *> V_in;
@@ -335,7 +343,8 @@ int main(int argc, char *argv[]) {
   std::unordered_set<uint32_t> finished;
 
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-  // Continue reducing vertices to forest until all internal vertices=
+  messages += machines;
+  // Continue reducing vertices to forest until all internal vertices
   // have been moved from the input map to the output map.
   uint32_t trees_off;
   uint32_t bfs_root;
@@ -361,6 +370,7 @@ int main(int argc, char *argv[]) {
     // Elect the minimum vertex id as the BFS tree root.
     MPI_Allreduce(&bfs_root, &forest[trees*2],
                   1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
+    messages += machines;
     bfs_root = forest[trees*2];
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
@@ -395,7 +405,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Exchange broadcast messages between all machines.
-      exchange(bcast_xinfo);
+      exchange(bcast_xinfo, &messages);
 
       // Reset, rewind.
       exchange_info_rewind(bcast_xinfo);
@@ -461,7 +471,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Exchange upcast messages between all machines.
-      exchange(ucast_xinfo);
+      exchange(ucast_xinfo, &messages);
       exchange_info_rewind(ucast_xinfo);
 
       // Perform local receipt of remote upcast.
@@ -477,6 +487,7 @@ int main(int argc, char *argv[]) {
 
       // Reduce termination condition. Implicit synchronization point.
       MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+      messages += machines;
       forest[trees * 2 + 1] = tree_done;
 
       // Move finished vertices to the output map.
@@ -484,10 +495,12 @@ int main(int argc, char *argv[]) {
         V_in.erase(v);
       }
       finished.clear();
+      rounds++;
     }
     trees++;
     local_done = V_in.empty();
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+    messages += machines;
   }
 
   // Capture finishing time for connected component search.
