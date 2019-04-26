@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
   memset(forest, 0, forest_sz);
   int global_done = 0;
   int local_done = V_in.empty();
-  std::unordered_set<uint32_t> to_delete;
+  std::unordered_set<uint32_t> finished;
 
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   // Continue reducing vertices to forest until all internal vertices=
@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
 	    msg.group_ct = u->group_ct;
 	    exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
           }
-          to_delete.insert(u->id);
+          finished.insert(u->id);
         }
       }
 
@@ -456,12 +456,12 @@ int main(int argc, char *argv[]) {
       MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
       forest[trees * 2 + 1] = tree_done;
 
-      // Erase moribund vertices that have sent their respective upcast messages.
-      for (auto &v : to_delete) {
+      // Move finished vertices to the output map.
+      for (auto &v : finished) {
         V_out[v] = V_in[v];
         V_in.erase(v);
       }
-      to_delete.clear();
+      finished.clear();
     }
     trees++;
     local_done = V_in.empty();
