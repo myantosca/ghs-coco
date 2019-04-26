@@ -7,7 +7,10 @@
 #include <unordered_set>
 #include <vector>
 #include <iostream>
+#include <chrono>
 #include <mpi.h>
+
+using namespace std::chrono;
 
 // https://en.wikipedia.org/wiki/Mersenne_prime#List_of_known_Mersenne_primes
 #define MERSENNE_61 2305843009213693951
@@ -170,6 +173,9 @@ int main(int argc, char *argv[]) {
     a++;
   }
 
+  // Capture starting time for preprocessing.
+  time_point<system_clock, nanoseconds> tp_prep_a = system_clock::now();
+
   // Determine hash function parameters.
   std::random_device rd;
   std::mt19937 prng(rd());
@@ -297,6 +303,9 @@ int main(int argc, char *argv[]) {
   // Clean up so as not hoard memory.
   exchange_info_free(edges_xinfo);
 
+  // Capture finishing time for preprocessing.
+  time_point<system_clock, nanoseconds> tp_prep_b = system_clock::now();
+
   if (verbosity == 1) {
     // Debug printout of graph in vertex-centric format.
     for (int machine = 0; machine < machines; machine++) {
@@ -312,6 +321,9 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+
+  // Capture starting time for connected component search.
+  time_point<system_clock, nanoseconds> tp_coco_a = system_clock::now();
 
   // Execute BFS search for forest.
   uint32_t forest_sz = 2 * sizeof(uint32_t);;
@@ -478,6 +490,11 @@ int main(int argc, char *argv[]) {
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   }
 
+  // Capture finishing time for connected component search.
+  time_point<system_clock, nanoseconds> tp_coco_b = system_clock::now();
+  int64_t T[2] = { (tp_prep_b - tp_prep_a).count(), (tp_coco_b - tp_coco_a).count() };
+  int64_t T0[2] = { 0, 0 };
+  MPI_Reduce(&T, &T0, 2, MPI_UNSIGNED_LONG, MPI_MAX, 0, MPI_COMM_WORLD);
   if (rank == 0) {
     for (int tree = 0; tree < trees; tree++) {
       std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
