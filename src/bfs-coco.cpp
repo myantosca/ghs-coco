@@ -355,8 +355,6 @@ int main(int argc, char *argv[]) {
         // If scheduled to broadcast...
         if (u->state == BROADCAST) {
           u->state = PENDING;
-          // Broadcast group to children.
-          to_delete.clear();
           for (auto &id_v : u->neighbors) {
             uint32_t machine_v = MACHINE_HASH(id_v);
 	    bcast_msgs[machine_v].insert(u->id);
