@@ -452,15 +452,16 @@ int main(int argc, char *argv[]) {
         p->neighbors.erase(child);
       }
 
+      // Reduce termination condition. Implicit synchronization point.
+      MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+      forest[trees * 2 + 1] = tree_done;
+
       // Erase moribund vertices that have sent their respective upcast messages.
       for (auto &v : to_delete) {
         V_out[v] = V_in[v];
         V_in.erase(v);
       }
       to_delete.clear();
-      // Reduce termination condition.
-      MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
-      forest[trees * 2 + 1] = tree_done;
     }
     trees++;
     local_done = V_in.empty();
