@@ -513,7 +513,16 @@ int main(int argc, char *argv[]) {
   int64_t T0[2] = { 0, 0 };
   MPI_Reduce(&T, &T0, 2, MPI_UNSIGNED_LONG, MPI_MAX, 0, MPI_COMM_WORLD);
   MPI_Reduce(&local_vertices, &global_vertices, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
+  // Print out connected component labels with component population counts.
   if (rank == 0) {
+    std::cout << "n,k,M,r,Tp,Tc" << std::endl;
+    std::cout << global_vertices << ",";
+    std::cout << machines << ",";
+    std::cout << messages << ",";
+    std::cout << rounds << ",";
+    std::cout << T0[0] << ",";
+    std::cout << T0[1] << std::endl;
+    std::cout << "iC,nC" << std::endl;
     for (int tree = 0; tree < trees; tree++) {
       std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
     }
