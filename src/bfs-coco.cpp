@@ -280,10 +280,13 @@ int main(int argc, char *argv[]) {
       vertex_u->children.clear();
       V_in[u] = vertex_u;
     }
-    if (u != v) {
-      vertex_u->neighbors.insert(v);
-      vertex_u->awaiting++;
-    }
+    if (u != v) { vertex_u->neighbors.insert(v); }
+  }
+
+  // Initialize awaiting counter here to avoid double counting
+  // edges if graph storage has duplicates.
+  for (auto &kv : V_in) {
+    kv.second->awaiting = kv.second->neighbors.size();
   }
 
   // Clean up so as not hoard memory.
