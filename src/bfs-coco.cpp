@@ -260,6 +260,7 @@ int main(int argc, char *argv[]) {
   // Construct local vertex-centric model.
   std::map<uint32_t, vertex_t *> V_in;
   std::map<uint32_t, vertex_t *> V_out;
+  std::map<uint32_t, std::unordered_set<uint32_t>> E_incoming;
   for (int i = 0; i < edges_xinfo->recv_caps; i += 2) {
     uint32_t u = edges_xinfo->recv_buf[i];
     uint32_t v = edges_xinfo->recv_buf[i+1];
@@ -280,7 +281,11 @@ int main(int argc, char *argv[]) {
       vertex_u->children.clear();
       V_in[u] = vertex_u;
     }
-    if (u != v) { vertex_u->neighbors.insert(v); }
+    if (u != v) {
+      vertex_u->neighbors.insert(v);
+      if (E_incoming.find(v) == E_incoming.end()) { E_incoming[v] = std::unordered_set<uint32_t>(); }
+      E_incoming[v].insert(u);
+    }
   }
 
   // Initialize awaiting counter here to avoid double counting
@@ -391,9 +396,11 @@ int main(int argc, char *argv[]) {
       for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
         uint32_t id_u = bcast_xinfo->recv_buf[i];
         uint32_t machine_u = MACHINE_HASH(id_u);
-        // Check each node for connection to each remote flooding parent.
-        for (auto &kv : V_in) {
-          vertex_t *v = kv.second;
+	for (auto &id_v : E_incoming[id_u]) {
+        // // Check each node for connection to each remote flooding parent.
+        // for (auto &kv : V_in) {
+          // vertex_t *v = kv.second;
+	  vertex_t *v = V_in[id_v];
           // If connected...
           if (v->neighbors.find(id_u) != v->neighbors.end()) {
             // Child is ungrouped. Meet your parent!
@@ -492,6 +499,11 @@ int main(int argc, char *argv[]) {
     kv.second = NULL;
   }
   V_out.clear();
+
+  for (auto &e : E_incoming) {
+    e.clear();
+  }
+  E_incoming.clear();
 
   free(forest);
   // Tear down MPI.
