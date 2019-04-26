@@ -263,9 +263,10 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < edges_xinfo->recv_caps; i += 2) {
     uint32_t u = edges_xinfo->recv_buf[i];
     uint32_t v = edges_xinfo->recv_buf[i+1];
+    vertex_t *vertex_u = V_in[u];
     // If the node has not been created yet, do so.
-    if (V_in.find(u) == V_in.end()) {
-      vertex_t *vertex_u = (vertex_t *)malloc(sizeof(vertex_t));
+    if (!vertex_u) {
+      vertex_u = (vertex_t *)malloc(sizeof(vertex_t));
       memset(vertex_u, 0, sizeof(vertex_t));
       vertex_u->id = u;
       vertex_u->parent = u;
@@ -279,7 +280,7 @@ int main(int argc, char *argv[]) {
       V_in[u] = vertex_u;
     }
     if (u != v) {
-      V_in[u]->neighbors.insert(v);
+      vertex_u->neighbors.insert(v);
     }
   }
 
@@ -314,10 +315,11 @@ int main(int argc, char *argv[]) {
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   // Continue reducing vertices to forest until all internal vertices=
   // have been moved from the input map to the output map.
+  uint32_t trees_off;
+  uint32_t bfs_root;
   while (!global_done) {
+    trees_off = trees << 3;
     // Out of room for forest!
-    uint32_t trees_off = trees << 3;
-    uint32_t bfs_root;
     if (trees_off == forest_sz) {
       // Double the buffer size.
       forest_sz = forest_sz << 1;
@@ -329,6 +331,7 @@ int main(int argc, char *argv[]) {
         exit(errno);
       }
     }
+
     // The first element must be ungrouped. Otherwise,
     // it would have already been removed from the map.
     bfs_root = V_in.empty() ? (1 << 31) : V_in.begin()->second->id;
