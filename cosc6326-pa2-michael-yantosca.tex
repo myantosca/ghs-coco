@@ -252,7 +252,30 @@
         \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
         \label{alg:bfs-coco}
         \begin{algorithmic}
-          \STATE{\TODO}
+          \REQUIRE{$G = (V,E)$, the graph to traverse}
+          \REQUIRE{$k$, the process/machine rank}
+          \IF{$r = 0$}{
+            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[0,M_{61} - 1]$.}
+            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
+          }\ENDIF
+          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
+          \STATE{Initialize exchange info $X_e$ for the vertex-centric model building phase.}
+          \STATE{Initialize exchange info $X_b$ for the broadcast phase.}
+          \STATE{Initialize exchange info $X_u$ for the upcast phase.}
+
+          \STATE{$S_F \gets $ the input file size}
+          \STATE{$|E| \gets S_F / 8$}
+          \STATE{$|E|_{\bar{k}} \gets S_F / k$}
+          \STATE{$|E|_r \gets S_F \mod k$}
+          \IF{$r < |E|_r$}{
+            \STATE{$|E|_k \gets |E|_{\bar{k}} + 1$}
+          }
+          \ELSE{
+            \STATE{$|E|_k \gets |E|_{\bar{k}}$}
+          }\ENDIF
+          \STATE{Read $|E|_k$ bytes from the input with offset as some function of $k$.}
+          \FOR{$i \in [0, |E|_k-1]$}{
+          }\ENDFOR
         \end{algorithmic}
       \end{algorithm}
     }
