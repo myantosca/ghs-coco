@@ -500,7 +500,7 @@ int main(int argc, char *argv[]) {
   V_out.clear();
 
   for (auto &e : E_incoming) {
-    e.clear();
+    e.second.clear();
   }
   E_incoming.clear();
 
