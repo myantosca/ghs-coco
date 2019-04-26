@@ -319,12 +319,12 @@ int main(int argc, char *argv[]) {
     for (int machine = 0; machine < machines; machine++) {
       if (rank == machine) {
         for (auto &kv : V_in) {
-          std::cout << "[" << machine << "]";
-          std::cout << kv.first << ":";
+          std::cerr << "[" << machine << "]";
+          std::cerr << kv.first << ":";
           for (auto &neighbor : kv.second->neighbors) {
-            std::cout << " " << neighbor;
+            std::cerr << " " << neighbor;
           }
-          std::cout << std::endl;
+          std::cerr << std::endl;
         }
       }
     }
