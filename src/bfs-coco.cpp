@@ -347,7 +347,7 @@ int main(int argc, char *argv[]) {
   std::unordered_set<uint32_t> finished;
 
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-  messages += machines;
+  messages += machines << 1;
   // Continue reducing vertices to forest until all internal vertices
   // have been moved from the input map to the output map.
   uint32_t trees_off;
@@ -374,7 +374,7 @@ int main(int argc, char *argv[]) {
     // Elect the minimum vertex id as the BFS tree root.
     MPI_Allreduce(&bfs_root, &forest[trees*2],
                   1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
-    messages += machines;
+    messages += machines << 1;
     bfs_root = forest[trees*2];
     int bfs_root_machine = MACHINE_HASH(bfs_root);
     // Set the root node to broadcast state.
@@ -491,9 +491,9 @@ int main(int argc, char *argv[]) {
 
       // Reduce termination condition. Implicit synchronization point.
       MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
-      messages += machines;
       forest[trees * 2 + 1] = tree_done;
 
+      messages += machines << 1;
       // Move finished vertices to the output map.
       for (auto &v : finished) {
         V_in.erase(v);
@@ -504,7 +504,7 @@ int main(int argc, char *argv[]) {
     trees++;
     local_done = V_in.empty();
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-    messages += machines;
+    messages += machines << 1;
   }
 
   // Capture finishing time for connected component search.
