@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH -p cosc6326
 #SBATCH -t 01:00:00
-#SBATCH -N 8
-#SBATCH --ntasks-per-node 4
+#SBATCH -N 4
+#SBATCH --ntasks-per-node 8
 
 export TS="$(date +%Y-%m-%d.%H.%M.%S)"
-export DOUT="./results/nkithr/${TS}"
+export DOUT="./results/bfs-coco/${TS}"
 mkdir -p ${DOUT}
 
 for ((k = 32; k > 0; k /= 2)); do
