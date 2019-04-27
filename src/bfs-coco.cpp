@@ -340,6 +340,12 @@ int main(int argc, char *argv[]) {
   // Execute BFS search for forest.
   uint32_t forest_sz = 2 * sizeof(uint32_t);;
   uint32_t trees = 0;
+  uint32_t tree_popl_min = 1 << 31;
+  uint32_t tree_popl_max = 0;
+  double tree_popl_av1 = 0;
+  double tree_popl_av0 = 0;
+  double tree_popl_var = 0;
+  double tree_popl_ess = 0;
   uint32_t *forest = (uint32_t *)malloc(forest_sz);
   memset(forest, 0, forest_sz);
   int global_done = 0;
@@ -383,10 +389,10 @@ int main(int argc, char *argv[]) {
       r->state = BROADCAST;
       bcast_vertices.push_back(r);
     }
-    uint32_t tree_done = 0;
+    uint32_t tree_popl = 0;
     // Continue flooding until root has received
     // population subtotals from all its children.
-    while (!tree_done) {
+    while (!tree_popl) {
       /*******************
        * Broadcast phase *
        *******************/
@@ -490,10 +496,9 @@ int main(int argc, char *argv[]) {
       }
 
       // Reduce termination condition. Implicit synchronization point.
-      MPI_Allreduce(&forest[trees*2 + 1], &tree_done, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
-      forest[trees * 2 + 1] = tree_done;
-
+      MPI_Allreduce(&forest[trees*2 + 1], &tree_popl, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
       messages += machines << 1;
+      forest[trees*2 + 1] = tree_popl;
       // Move finished vertices to the output map.
       for (auto &v : finished) {
         V_in.erase(v);
@@ -501,7 +506,18 @@ int main(int argc, char *argv[]) {
       finished.clear();
       rounds++;
     }
+
+    // Component population statistics.
     trees++;
+    tree_popl_min = (tree_popl < tree_popl_min) ? tree_popl : tree_popl_min;
+    tree_popl_max = (tree_popl > tree_popl_max) ? tree_popl : tree_popl_max;
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+    tree_popl_av0 = tree_popl_av1;
+    tree_popl_av1 += (tree_popl - tree_popl_av0) / trees;
+    tree_popl_ess += (tree_popl - tree_popl_av0) * (tree_popl - tree_popl_av1);
+    tree_popl_var = tree_popl_ess / trees;
+
+    // Global termination condition.
     local_done = V_in.empty();
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
     messages += machines << 1;
@@ -515,13 +531,19 @@ int main(int argc, char *argv[]) {
   MPI_Reduce(&local_vertices, &global_vertices, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
   // Print out connected component labels with component population counts.
   if (rank == 0) {
-    std::cout << "n,k,M,r,Tp,Tc" << std::endl;
+    std::cout << "n,k,M,r,Tp,Tc,f,cl,cm,cu,cv" << std::endl;
     std::cout << global_vertices << ",";
     std::cout << machines << ",";
     std::cout << messages << ",";
     std::cout << rounds << ",";
     std::cout << T0[0] << ",";
-    std::cout << T0[1] << std::endl;
+    std::cout << T0[1] << ",";
+    std::cout << trees << ",";
+    std::cout << tree_popl_min << ",";
+    std::cout << tree_popl_av1 << ",";
+    std::cout << tree_popl_max << ",";
+    std::cout << tree_popl_var << std::endl;
+
     std::cout << "iC,nC" << std::endl;
     for (int tree = 0; tree < trees; tree++) {
       std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
