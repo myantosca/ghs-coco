@@ -249,6 +249,23 @@
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
+        \caption{\textsc{Exchange}, Machine-wise Exchange of Information}
+        \label{alg:exchange}
+        \begin{algorithmic}
+          \REQUIRE{$X_i$, exchange information for machine $i$}
+          \REQUIRE{$send(X_i)[m]$, send buffer targeting machine $m$ from machine $i$}
+          \REQUIRE{$recv(X_m)$, receive buffer for machine $m$}
+          \REQUIRE{$k$, the number of machines participating}
+          \FOR{$m \in [0,k-1]$}{
+            \STATE{Machine $m$ gathers $len(send(X_i)[m])$ from all machines.}
+            \STATE{Machine $m$ allocates $\sum_{i=0}^{k-1} len(send(X_i)[m])$ for $recv(X_m)$.}
+            \STATE{$recv(X_m) \gets concat(\{ send(X_i)[m] \ | \  0 \leq i < k \})$}
+          }\ENDFOR
+        \end{algorithmic}
+      \end{algorithm}
+
+      \begin{algorithm}
+        \footnotesize
         \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
         \label{alg:bfs-coco}
         \begin{algorithmic}
@@ -283,7 +300,7 @@
             \STATE{Add $e_{uv}$ to the exchange buffer for $machine_u$.}
             \STATE{Add $e_{vu}$ to the exchange buffer for $machine_v$.}
           }\ENDFOR
-          \STATE{Exchange edge buffers via \textsc{GatherV} operation.}
+          \STATE{\textsc{Exchange}($X_e$)}
         \end{algorithmic}
       \end{algorithm}
     }
