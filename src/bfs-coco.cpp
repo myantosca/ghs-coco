@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
     vu[1] = uv[0];
     // Determine the machines housing u and v.
     uint64_t machine_u = MACHINE_HASH(uv[0]);
-    uint64_t machine_v = MACHINE_HASH(uv[1]);
+    uint64_t machine_v = MACHINE_HASH(vu[0]);
     // Add (u,v) to buffer to send to machine[u].
     // By convention, the node housed in the machine is first.
     exchange_info_send_buf_insert(edges_xinfo, machine_u, uv, 2);
