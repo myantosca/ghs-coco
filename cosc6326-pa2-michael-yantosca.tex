@@ -320,8 +320,16 @@
         \end{align}
       }
       \end{itemize}
-      Each parameter combination was executed at least 3 times with
-      several executables contributing to the testing process:
+      Each parameter combination was executed on 3 pre-generated graphs
+      per regime. The graphs generated with the naive combinatorial edge
+      selection scheme only covered graphs with $n \leq 2^{17}$ because of
+      the immense time required for generation. However, this should still
+      provide enough data points to observe a general trend and make cogent
+      comparisons with the much faster but slightly incorrect binomial edge
+      selection scheme.
+    }
+    \paragraph{}{
+      Several executables contributed to the testing process:
     }
     \paragraph{\texttt{txt2mpig}}{
       A utility program for converting SNAP edge-centric model text files
