@@ -209,6 +209,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::unordered_set<uint32_t>> bcast_msgs;
   std::map<uint32_t, ucast_msg_t> ucast_msgs;
   std::vector<vertex_t *>bcast_vertices;
+  std::vector<vertex_t *>ucast_vertices;
   // Read input and distribute to appropriate nodes.
   MPI_File mpi_fp_in = MPI_FILE_NULL;
   MPI_Offset total_buf_sz = 0;
@@ -404,6 +405,8 @@ int main(int argc, char *argv[]) {
             uint32_t machine_v = MACHINE_HASH(id_v);
 	    bcast_msgs[machine_v].insert(u->id);
           }
+	  // Be sure to add singleton nodes to the upcast queue.
+	  if (u->awaiting == 0) { ucast_vertices.push_back(u); }
         }
       }
 
@@ -428,10 +431,8 @@ int main(int argc, char *argv[]) {
       for (int i = 0; i < bcast_xinfo->recv_caps; i++) {
         uint32_t id_u = bcast_xinfo->recv_buf[i];
         uint32_t machine_u = MACHINE_HASH(id_u);
+	// Use reverse lookup to only hit nodes that will have received something.
 	for (auto &id_v : E_incoming[id_u]) {
-        // // Check each node for connection to each remote flooding parent.
-        // for (auto &kv : V_in) {
-          // vertex_t *v = kv.second;
 	  vertex_t *v = V_in[id_v];
           // If connected...
           if (v->neighbors.find(id_u) != v->neighbors.end()) {
@@ -457,28 +458,27 @@ int main(int argc, char *argv[]) {
       /****************
        * Upcast phase *
        ****************/
-      for (auto &kv : V_in) {
-        vertex_t *u = kv.second;
+      for (vertex_t *u : ucast_vertices) {
         // If no longer waiting on children...
-        if (u->state == PENDING && u->awaiting == 0) {
-          u->state = FINISHED;
-          // Upcast subtree population to parent.
-          if (u->id == bfs_root) {
-            // Update the tree count.
-            forest[trees*2+1] = u->group_ct;
-          }
-          else {
-            uint32_t parent_machine = MACHINE_HASH(u->parent);
-	    ucast_msg_t msg;
-	    msg.parent = u->parent;
-	    msg.child = u->id;
-	    msg.group_ct = u->group_ct;
-	    exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
-          }
-          V_out.push_back(u);
-	  finished.insert(u->id);
-        }
+	u->state = FINISHED;
+	// Upcast subtree population to parent.
+	if (u->id == bfs_root) {
+	  // Update the tree count.
+	  forest[trees*2+1] = u->group_ct;
+	}
+	else {
+	  uint32_t parent_machine = MACHINE_HASH(u->parent);
+	  ucast_msg_t msg;
+	  msg.parent = u->parent;
+	  msg.child = u->id;
+	  msg.group_ct = u->group_ct;
+	  exchange_info_send_buf_insert(ucast_xinfo, parent_machine, (uint32_t *)&msg, 3);
+	}
+	V_out.push_back(u);
+	finished.insert(u->id);
       }
+
+      ucast_vertices.clear();
 
       // Exchange upcast messages between all machines.
       exchange(ucast_xinfo, &messages);
@@ -493,6 +493,8 @@ int main(int argc, char *argv[]) {
         p->group_ct += group_ct;
         if (group_ct > 0) { p->children.insert(child); }
 	p->awaiting--;
+	// Add nodes with nothing to await to the upcast queue.
+	if (p->awaiting == 0) { ucast_vertices.push_back(p); }
       }
 
       // Reduce termination condition. Implicit synchronization point.
