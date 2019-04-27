@@ -3,7 +3,7 @@
 #SBATCH -t 01:00:00
 #SBATCH -N 4
 #SBATCH --ntasks-per-node 8
-
+#SBATCH --nodelist crill-101,crill-102,crill-201,crill-202
 export TS="$(date +%Y-%m-%d.%H.%M.%S)"
 export DOUT="./results/bfs-coco/${TS}"
 mkdir -p ${DOUT}
