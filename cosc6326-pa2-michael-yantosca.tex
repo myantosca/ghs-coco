@@ -254,6 +254,7 @@
         \begin{algorithmic}
           \REQUIRE{$G = (V,E)$, the graph to traverse}
           \REQUIRE{$k$, the process/machine rank}
+          \REQUIRE{$\textsc{Machine-Hash}(v) = ((h_a * v + h_b) \mod M_{61}) \mod k$}
           \IF{$r = 0$}{
             \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[0,M_{61} - 1]$.}
             \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
@@ -273,9 +274,16 @@
           \ELSE{
             \STATE{$|E|_k \gets |E|_{\bar{k}}$}
           }\ENDIF
-          \STATE{Read $|E|_k$ bytes from the input with offset as some function of $k$.}
+          \STATE{Read $|E|_k$ bytes with offset proportional to $k$ into $E_r$.}
           \FOR{$i \in [0, |E|_k-1]$}{
+            \STATE{$e_{uv} \gets (E_r[2i],E_r[2i+1])$}
+            \STATE{$e_{vu} \gets (E_r[2i+1],E_r[2i])$}
+            \STATE{$machine_u \gets \textsc{Machine-Hash}(e_{uv}[0])$}
+            \STATE{$machine_v \gets \textsc{Machine-Hash}(e_{vu}[0])$}
+            \STATE{Add $e_{uv}$ to the exchange buffer for $machine_u$.}
+            \STATE{Add $e_{vu}$ to the exchange buffer for $machine_v$.}
           }\ENDFOR
+          \STATE{Exchange edge buffers via \textsc{GatherV} operation.}
         \end{algorithmic}
       \end{algorithm}
     }
