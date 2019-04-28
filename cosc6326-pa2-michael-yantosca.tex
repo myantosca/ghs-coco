@@ -743,6 +743,57 @@
       The discrepancy in wall-clock time between the connected and disconnected regimes is likewise reflected.
     }
   }
+  \subsection{Real-World Graphs}{
+    \paragraph{}{
+      \begin{figure}
+        \begin{tikzpicture}
+          \footnotesize
+          \begin{groupplot}[
+              group style={
+                group size=4 by 3,
+                xlabels at=edge bottom,
+                ylabels at=edge left,
+                vertical sep=0.5in
+              },
+              height=1.5in,
+              width=1.5in,
+              xlabel=$k$,
+              ylabel=$t$ (ns),
+              tick label style={font=\tiny},
+              label style={font=\tiny},
+              legend style={font=\tiny, legend columns=6},
+              legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+              legend to name=nprocs
+            ]
+            % facebook combined
+            \linregplots{\footnotesize Load Time}{./rw-results/bfs-coco}{.facebook_combined}{k}{Tp}
+            \linregplots{\footnotesize BFS Time}{./rw-results/bfs-coco}{.facebook_combined}{k}{Tc}
+            \linregplots{\footnotesize Messages}{./rw-results/bfs-coco}{.facebook_combined}{k}{M}
+            \linregplots{\footnotesize Rounds}{./rw-results/bfs-coco}{.facebook_combined}{k}{r}
+            % ca-AstroPh
+            \linregplots{}{./rw-results/bfs-coco}{.ca-AstroPh}{k}{Tp}
+            \linregplots{}{./rw-results/bfs-coco}{.ca-AstroPh}{k}{Tc}
+            \linregplots{}{./rw-results/bfs-coco}{.ca-AstroPh}{k}{M}
+            \linregplots{}{./rw-results/bfs-coco}{.ca-AstroPh}{k}{r}
+            % roadNet-TX
+            \linregplots{}{./rw-results/bfs-coco}{.roadNet-TX}{k}{Tp}
+            \linregplots{}{./rw-results/bfs-coco}{.roadNet-TX}{k}{Tc}
+            \linregplots{}{./rw-results/bfs-coco}{.roadNet-TX}{k}{M}
+            \linregplots{}{./rw-results/bfs-coco}{.roadNet-TX}{k}{r}
+          \end{groupplot}
+          \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){facebook};
+          \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){ca-AstroPh};
+          \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){roadNet-TX};
+          \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+        \end{tikzpicture}
+        \caption{\footnotesize Empirical Complexity of Algorithm~\ref{alg:bfs-coco} on Real-World Graphs}
+        \label{fig:bfs-coco-cplx-rw}
+      \end{figure}
+    }
+    \paragraph{}{
+      The real world graphs depicted in Figure~\ref{fig:bfs-coco-cplx-rw} 
+    }
+  }  
 }
 
 \section{Conclusions}{
