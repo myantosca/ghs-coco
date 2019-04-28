@@ -407,7 +407,7 @@ int main(int argc, char *argv[]) {
           }
 	  // Be sure to add singleton nodes to the upcast queue.
 	  if (u->awaiting == 0) { ucast_vertices.push_back(u); }
-        }
+	}
       }
 
       for (int machine = 0; machine < machines; machine++) {
@@ -434,24 +434,21 @@ int main(int argc, char *argv[]) {
 	// Use reverse lookup to only hit nodes that will have received something.
 	for (auto &id_v : E_incoming[id_u]) {
 	  vertex_t *v = V_in[id_v];
-          // If connected...
-          if (v->neighbors.find(id_u) != v->neighbors.end()) {
-            // Child is ungrouped. Meet your parent!
-            if (v->state == UNGROUPED) {
-              v->parent = id_u;
-              v->state = BROADCAST;
-              v->group = bfs_root;
-	      bcast_vertices.push_back(v);
-            }
-            // Child already has a parent. Upcast to remove dead link.
-            else {
-              ucast_msg_t msg;
-              msg.parent = id_u;
-              msg.child = v->id;
-              msg.group_ct = 0;
-	      exchange_info_send_buf_insert(ucast_xinfo, machine_u, (uint32_t *)&msg, 3);
-            }
-          }
+	  // Child is ungrouped. Meet your parent!
+	  if (v->state == UNGROUPED) {
+	    v->parent = id_u;
+	    v->state = BROADCAST;
+	    v->group = bfs_root;
+	    bcast_vertices.push_back(v);
+	  }
+	  // Child already has a parent. Upcast to remove dead link.
+	  else {
+	    ucast_msg_t msg;
+	    msg.parent = id_u;
+	    msg.child = v->id;
+	    msg.group_ct = 0;
+	    exchange_info_send_buf_insert(ucast_xinfo, machine_u, (uint32_t *)&msg, 3);
+	  }
         }
       }
 
