@@ -266,21 +266,26 @@
 
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
-        \label{alg:bfs-coco}
+        \caption{\textsc{Machine-Hash}, Universal Hashing Function for Mapping Vertices to Machines}
+        \label{alg:machine-hash}
         \begin{algorithmic}
-          \REQUIRE{$G = (V,E)$, the graph to traverse}
-          \REQUIRE{$k$, the process/machine rank}
-          \REQUIRE{$\textsc{Machine-Hash}(v) = ((h_a * v + h_b) \mod M_{61}) \mod k$}
-          \IF{$r = 0$}{
-            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[0,M_{61} - 1]$.}
-            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
-          }\ENDIF
-          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
-          \STATE{Initialize exchange info $X_e$ for the vertex-centric model building phase.}
-          \STATE{Initialize exchange info $X_b$ for the broadcast phase.}
-          \STATE{Initialize exchange info $X_u$ for the upcast phase.}
+          \REQUIRE{$M_{61}$, the Mersenne prime $2^{61} - 1$}
+          \REQUIRE{$h_a$, an integer in the range $[1,M_{61} - 1]$}
+          \REQUIRE{$h_b$, an integer in the range $[0,M_{61} - 1]$}
+          \REQUIRE{$k$, the number of machines}
+          \REQUIRE{$i_v$, the vertex id to be hashed to some machine $m_h$}
+          \RETURN{$((h_ai_v + h_b) \mod M_{61}) \mod k$}
+        \end{algorithmic}
+      \end{algorithm}
 
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Load-Edge-To-Vertex-Centric}, Distributed Algorithm for Loading an Edge-Centric Storage Model and Converting to a Vertex-Centric Memory Model}
+        \label{alg:le2v}
+        \begin{algorithmic}
+          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
+          \STATE{Initialize edge exchange info $X_e$.}
+          \STATE{Open $F$ for reading.}
           \STATE{$S_F \gets $ the input file size}
           \STATE{$|E| \gets S_F / 8$}
           \STATE{$|E|_{\bar{k}} \gets S_F / k$}
@@ -292,18 +297,156 @@
             \STATE{$|E|_k \gets |E|_{\bar{k}}$}
           }\ENDIF
           \STATE{Read $|E|_k$ bytes with offset proportional to $k$ into $E_r$.}
+          \STATE{Close $F$.}
           \FOR{$i \in [0, |E|_k-1]$}{
             \STATE{$e_{uv} \gets (E_r[2i],E_r[2i+1])$}
             \STATE{$e_{vu} \gets (E_r[2i+1],E_r[2i])$}
-            \STATE{$machine_u \gets \textsc{Machine-Hash}(e_{uv}[0])$}
-            \STATE{$machine_v \gets \textsc{Machine-Hash}(e_{vu}[0])$}
+            \STATE{$machine_u \gets \textsc{Machine-Hash}(h_a, h_b, k, e_{uv}[0])$}
+            \STATE{$machine_v \gets \textsc{Machine-Hash}(h_a, h_b, k, e_{vu}[0])$}
             \STATE{Add $e_{uv}$ to the exchange buffer for $machine_u$.}
             \STATE{Add $e_{vu}$ to the exchange buffer for $machine_v$.}
           }\ENDFOR
           \STATE{\textsc{Exchange}($X_e$)}
+          \STATE{$E_{in} \gets emptyset$}
+          \FOR{$(i_u,i_v) \in E_{rcvd}$}{
+            \STATE{$u \gets V_{in}[i_u]$}
+            \IF{$u = \bot$}{
+              \STATE{$u \gets \{ i = u, i_p = u, i_g = u, |g| = 1, s = \textsc{ungrouped}, w = 0, N = \emptyset, C = \emptyset$ \}}
+              \STATE{$V_{in}[i_u] \gets u$}
+            }\ENDIF
+            \IF{$i_u \neq i_v$}{
+              \STATE{$N(u) \gets N(u) \cup \{ i_v \}$}
+              \IF{$i_v \notin E_{in}$}{
+                \STATE{$E_{in}[i_v] \gets \emptyset$}
+              }\ENDIF
+              \STATE{$E_{in}[i_v] \gets E_{in}[i_v] \cup \{ i_u \}$}
+            }\ENDIF
+          }\ENDFOR
+          \FOR{$u \in V_{in}$}{
+            \STATE{$w(u) \gets |N(u)|$}
+            \COMMENT{Avoid double-counting neighbors if duplicates in edge storage.}
+          }\ENDFOR
+          \RETURN{$(V_{in}, E_{in})$}
+        \end{algorithmic}
+      \end{algorithm}
+
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
+        \label{alg:bfs-coco}
+        \begin{algorithmic}
+          \REQUIRE{$k$, the process/machine rank}
+          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
+          \IF{$r = 0$}{
+            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[1,M_{61} - 1]$.}
+            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
+          }\ENDIF
+          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
+          \STATE{$(V_{in}, E_{in}) \gets \textsc{Load-Edge-To-Vertex-Centric}(F, k)$}
+
+          \STATE{Initialize exchange info $X_B$ for the broadcast phase.}
+          \STATE{Initialize exchange info $X_U$ for the upcast phase.}
+          \STATE{$T$ \gets \emptyset}
+          \COMMENT{component set}
+          \STATE{$B$ \gets \emptyset}
+          \COMMENT{broadcast vertex set}
+          \STATE{$U$ \gets \emptyset}
+          \COMMENT{upcast vertex set}
+          \STATE{$V_{out} \gets \emptyset$}
+          \COMMENT{finished vertex set}
+          \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+          \COMMENT{local termination condition}
+          \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+          \COMMENT{global termination condition}
+          \WHILE{$\neg \Omega$}{
+            \STATE{$i_{g,r} \gets \min\limits_{v \in V_{in}} i(v)$}
+            \STATE{$i_g \gets \min\limits_{r=0}^{k-1} i_{g,r}$}
+            \STATE{$m_g \gets \textsc{Machine-Hash}(h_a, h_b, k, i_g)$}
+            \STATE{$|g|_r \gets 0$}
+            \STATE{$|g| \gets 0$}
+            \IF{$r = m_g$}{
+              \STATE{$s(V_{in}[i_g]) \gets \textsc{broadcast}$}
+              \STATE{$B \gets B \cup \{ V_{in}[i_g] \}$}
+            }\ENDIF
+            \WHILE{$|g| = 0$}{
+              \STATE{Execute \textsc{BFS-Connected-Components-Broadcast} phase.}
+              \STATE{Execute \textsc{BFS-Connected-Components-Upcast} phase.}
+              \STATE{$|g| \gets \max_{r=0}^{k-1} |g|_r$}
+            }\ENDWHILE
+            \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+          }\ENDWHILE
         \end{algorithmic}
       \end{algorithm}
     }
+    \begin{algorithm}
+      \footnotesize
+      \caption{\textsc{BFS-Connected-Components-Upcast}, Broadcast Phase of Algorithm~\ref{alg:bfs-coco} }
+      \label{alg:bfs-coco-broadcast}
+      \begin{algorithmic}
+        \FORALL{$u \in B$}{
+          \STATE{$s(u) \gets \textsc{pending}$}
+          \FORALL{$i_v \in N(u)$}{
+            \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,i_v)$}
+            \STATE{$send(X_B)[m_v] \gets send(X_B)[m_v] \cup \{ i(u) \}$}
+          }\ENDFOR
+          \IF{$w(u) = 0$}{
+            \STATE{$U \gets U \cup \{ u \}$}
+          }\ENDIF
+        }\ENDFOR
+        \STATE{$\textsc{Exchange}(X_B)$}
+        \STATE{$\textsc{Rewind}(X_B)$}
+        \STATE{$B \gets \emptyset$}
+        \FORALL{$i_u \in recv(X_B)$}{
+          \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k,i_u)$}
+          \FORALL{$i_v \in E_{in}[i_u]$}{
+            \STATE{$v \gets V_{in}[i_v]$}
+            \IF{$s(v) = \textsc{ungrouped}$}{
+              \STATE{$i_p(v) \gets i_u$}
+              \STATE{$s(v) \gets \textsc{broadcast}$}
+              \STATE{$i_g(v) \gets i_g$}
+              \STATE{$B \gets B \cup \{ v \}$}
+            }\ELSE{
+              \STATE{$send(X_U)[m_u] \gets send(X_U)[m_u] + (i_u, i(v), 0)$}
+            }\ENDIF
+          }\ENDFOR
+        }\ENDFOR
+      \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+      \footnotesize
+      \caption{\textsc{BFS-Connected-Components-Upcast}, Upcast Phase of Algorithm~\ref{alg:bfs-coco} }
+      \label{alg:bfs-coco-upcast}
+      \begin{algorithmic}
+        \FORALL{$u \in U$}{
+          \STATE{$s(u) \gets \textsc{FINISHED}$}
+          \IF{$i(u) = i_g$}{
+            \STATE{$|g|_r \gets |g|(u)$}
+          }\ELSE{
+            \STATE{$m_p \gets \textsc{Machine-Hash}(h_a, h_b, k,i_p(u))$}
+            \STATE{$send(X_U)[m_p] \gets send(X_U)[m_p] + (i_p(u), i(u), |g|(u))$}
+            \STATE{$V_{out} \gets V_{out} \cup \{ u \}$}
+          }\ENDIF
+        }\ENDFOR
+        \STATE{$U \gets \emptyset$}
+        \STATE{$\textsc{Exchange}(X_U)$}
+        \STATE{$\textsc{Rewind}(X_U)$}
+        \FORALL{$(i_v, i_u, |g|_u) \in recv(X_U)$}{
+          \STATE{$v \gets V_{in}[i_v]$}
+          \STATE{$|g|(v) \gets |g|(v) + |g|_u$}
+          \IF{$|g|_u > 0$}{
+            \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
+          }\ENDIF
+          \STATE{$w(v) \gets w(v) - 1$}
+          \IF{$w(v) = 0$}{
+            \STATE{$U \gets U \cup \{ v \}$}
+          }\ENDIF
+        }\ENDFOR
+        \STATE{$V_{in} \gets V_{in} \setminus V_{out}$}
+      \end{algorithmic}
+    \end{algorithm}
+
     \paragraph{}{
       \TODO
     }
