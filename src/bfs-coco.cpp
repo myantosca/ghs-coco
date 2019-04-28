@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
 
   // Initialize send buffers for edge exchange.
   for (int machine = 0; machine < machines; machine++) {
-    exchange_info_send_buf_resize(edges_xinfo, machine, 2);
+    exchange_info_send_buf_resize(edges_xinfo, machine, edges >> 1);
     edges_xinfo->send_counts[machine] = 0;
     // Increment the file read start offset for this rank.
     if (machine < rank) {
