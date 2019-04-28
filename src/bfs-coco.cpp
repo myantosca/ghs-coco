@@ -192,10 +192,10 @@ int main(int argc, char *argv[]) {
   uint64_t hash_a = 1;
   uint64_t hash_b = 0;
   if (rank == 0) {
-    std::uniform_int_distribution<uint64_t> hash_b_dist(0, MERSENNE_61 - 1);
     std::uniform_int_distribution<uint64_t> hash_a_dist(1, MERSENNE_61 - 1);
-    hash_b = hash_a_dist(prng);
-    hash_a = hash_b_dist(prng);
+    std::uniform_int_distribution<uint64_t> hash_b_dist(0, MERSENNE_61 - 1);
+    hash_a = hash_a_dist(prng);
+    hash_b = hash_b_dist(prng);
   }
 
   // Distribute hash parameters to all machines.
