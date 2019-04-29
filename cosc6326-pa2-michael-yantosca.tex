@@ -853,6 +853,164 @@
       and higher levels of cache could have created bottlenecks, especially in cases of large $n$.
     }
   }
+  \subsection{Component Statistics}{
+    \paragraph{}{
+      The following figures depict component size statistics for all the different regimes.
+      Plots are made on logarithmic axes for clarity.
+    }
+    \paragraph{}{
+      \begin{figure}
+        \begin{tikzpicture}
+          \footnotesize
+          \begin{loglogaxis}[
+              xlabel=$n$,
+              log basis x=2,
+              ylabel=$n_c$,
+              tick label style={font=\tiny},
+              label style={font=\tiny},
+              legend pos=outer north east,
+              legend style={font=\tiny},
+              legend entries={
+                $p = \frac{1-\epsilon}{n}$ (MC),
+                $p = \frac{1}{n}$ (MC),
+                $p = \frac{1+\epsilon}{n}$ (MC),
+                $p = \frac{(1-\epsilon)\ln n}{n}$ (MC),
+                $p = \frac{\ln n}{n}$ (MC),
+                $p = \frac{(1+\epsilon)\ln n}{n}$ (MC),
+                $p = \frac{1-\epsilon}{n}$ (LV),
+                $p = \frac{1}{n}$ (LV),
+                $p = \frac{1+\epsilon}{n}$ (LV),
+                $p = \frac{(1-\epsilon)\ln n}{n}$ (LV),
+                $p = \frac{\ln n}{n}$ (LV),
+                $p = \frac{(1+\epsilon)\ln n}{n}$ (LV),
+                facebook,
+                ca-AstroPh,
+                roadNet-TX
+              }
+            ]
+            % 1-
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.1-.csv};
+            % 1
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.1.csv};
+            % 1+
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.1+.csv};
+            % L-
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.L-.csv};
+            % L
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.L.csv};
+            % L+
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.mc.L+.csv};
+            % 1-
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.1-.csv};
+            % 1
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.1.csv};
+            % 1+
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.1+.csv};
+            % L-
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.L-.csv};
+            % L
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.L.csv};
+            % L+
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=cm] {./er-results/bfs-coco.compstats.vg.L+.csv};
+            % facebook combined
+            \addplot [black, only marks, mark size=0.5] table [x=n, y=cm] {./rw-results/bfs-coco.compstats.facebook_combined.csv};
+            % ca-AstroPh
+            \addplot [blue, only marks, mark size=0.5] table [x=n, y=cm] {./rw-results/bfs-coco.compstats.ca-AstroPh.csv};
+            % roadNet-TX
+            \addplot [red, only marks, mark size=0.5] table [x=n, y=cm] {./rw-results/bfs-coco.compstats.roadNet-TX.csv};
+          \end{loglogaxis}
+        \end{tikzpicture}
+        \caption{\footnotesize Component Mean Size for Various Regimes}
+        \label{fig:bfs-coco-compmean}
+      \end{figure}
+    }
+    \paragraph{}{
+      In Figure~\ref{fig:bfs-coco-compmean}, the component mean size climbs with total vertex population size in the case where
+      $p$ is close to $\frac{\ln n}{n}$. This suggests a significantly higher degree of connectivity than the case where $p$ is
+      close to $\frac{1}{n}$, where the components appear to be singletons or very nearly singletons on average. It would seem
+      that setting $\epsilon = 0.2$  may be too tight to observe the transition threshold alluded to in the assignment specification\autocite[5]{pa2spec}.
+      Widening $\epsilon$ to $0.5$ or greater may have offered a more stark comparison. It is interesting to note that the component
+      size for \texttt{facebook} suggests complete connection whereas that for \texttt{ca-AstroPh} and \texttt{roadNet-TX} exhibit
+      slightly lower connectivity, though not as low as the Erdos-Renyi graphs where $p$ is close to $\frac{1}{n}$.
+    }
+    \paragraph{}{
+      \begin{figure}
+        \begin{tikzpicture}
+          \footnotesize
+          \begin{loglogaxis}[
+              xlabel=$n$,
+              log basis x=2,
+              ylabel=$n_c$,
+              tick label style={font=\tiny},
+              label style={font=\tiny},
+              legend pos=outer north east,
+              legend style={font=\tiny},
+              legend entries={
+                $p = \frac{1-\epsilon}{n}$ (MC),
+                $p = \frac{1}{n}$ (MC),
+                $p = \frac{1+\epsilon}{n}$ (MC),
+                $p = \frac{(1-\epsilon)\ln n}{n}$ (MC),
+                $p = \frac{\ln n}{n}$ (MC),
+                $p = \frac{(1+\epsilon)\ln n}{n}$ (MC),
+                $p = \frac{1-\epsilon}{n}$ (LV),
+                $p = \frac{1}{n}$ (LV),
+                $p = \frac{1+\epsilon}{n}$ (LV),
+                $p = \frac{(1-\epsilon)\ln n}{n}$ (LV),
+                $p = \frac{\ln n}{n}$ (LV),
+                $p = \frac{(1+\epsilon)\ln n}{n}$ (LV),
+                facebook,
+                ca-AstroPh,
+                roadNet-TX
+              }
+            ]
+            % 1-
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.1-.csv};
+            % 1
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.1.csv};
+            % 1+
+            \addplot [green, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.1+.csv};
+            % L-
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.L-.csv};
+            % L
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.L.csv};
+            % L+
+            \addplot [orange, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.mc.L+.csv};
+            % 1-
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.1-.csv};
+            % 1
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.1.csv};
+            % 1+
+            \addplot [magenta, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.1+.csv};
+            % L-
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.L-.csv};
+            % L
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.L.csv};
+            % L+
+            \addplot [cyan, only marks, mark size=0.5] table [x=n, y=f] {./er-results/bfs-coco.compstats.vg.L+.csv};
+            % facebook combined
+            \addplot [black, only marks, mark size=0.5] table [x=n, y=f] {./rw-results/bfs-coco.compstats.facebook_combined.csv};
+            % ca-AstroPh
+            \addplot [blue, only marks, mark size=0.5] table [x=n, y=f] {./rw-results/bfs-coco.compstats.ca-AstroPh.csv};
+            % roadNet-TX
+            \addplot [red, only marks, mark size=0.5] table [x=n, y=f] {./rw-results/bfs-coco.compstats.roadNet-TX.csv};
+          \end{loglogaxis}
+        \end{tikzpicture}
+        \caption{\footnotesize Component Counts for Various Regimes}
+        \label{fig:bfs-coco-forest}
+      \end{figure}
+    }
+    \paragraph{}{
+      Figure~\ref{fig:bfs-coco-forest} confirms the suggestions arising from Figure~\ref{fig:bfs-coco-compmean}
+      in a more concrete fashion. The Facebook graph is completely connected. The network of
+      co-publishing astrophysicists seems to have between 100 and 1000 clusters of scientists.
+      This probably could be considered as a marker for institution or subfield, though without
+      more explicit data it is impossible to say for certain. The Texas road network graph is
+      a little more surprising since one might have expected something closer to complete connectivity.
+      The components could be a marker for the urban/rural divide since all the major cities in
+      Texas would have been connected by major freeways. The isolates would likely be smaller towns
+      or possibly farmland and ranches with relatively self-contained road subnets.
+    }
+  }
 }
 
 \section{Conclusions}{
