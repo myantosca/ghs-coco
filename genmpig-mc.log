@@ -1,0 +1,990 @@
+mpirun -np 2 ./build/genmpig -n 1024 -p .00676901543515571591 -b 65536 -o ./graphs/er/mc.10.L.0.ecg -m
+
+real	0m0.362s
+user	0m0.087s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00812281852218685909 -b 65536 -o ./graphs/er/mc.10.L+.0.ecg -m
+
+real	0m0.348s
+user	0m0.095s
+sys	0m0.156s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00541521234812457272 -b 65536 -o ./graphs/er/mc.10.L-.0.ecg -m
+
+real	0m0.306s
+user	0m0.084s
+sys	0m0.132s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00097656250000000000 -b 65536 -o ./graphs/er/mc.10.1.0.ecg -m
+
+real	0m0.310s
+user	0m0.075s
+sys	0m0.147s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00117187500000000000 -b 65536 -o ./graphs/er/mc.10.1+.0.ecg -m
+
+real	0m0.333s
+user	0m0.079s
+sys	0m0.166s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00078125000000000000 -b 65536 -o ./graphs/er/mc.10.1-.0.ecg -m
+
+real	0m0.329s
+user	0m0.091s
+sys	0m0.144s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00676901543515571591 -b 65536 -o ./graphs/er/mc.10.L.1.ecg -m
+
+real	0m0.354s
+user	0m0.106s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00812281852218685909 -b 65536 -o ./graphs/er/mc.10.L+.1.ecg -m
+
+real	0m0.327s
+user	0m0.092s
+sys	0m0.182s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00541521234812457272 -b 65536 -o ./graphs/er/mc.10.L-.1.ecg -m
+
+real	0m0.300s
+user	0m0.118s
+sys	0m0.117s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00097656250000000000 -b 65536 -o ./graphs/er/mc.10.1.1.ecg -m
+
+real	0m0.322s
+user	0m0.123s
+sys	0m0.113s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00117187500000000000 -b 65536 -o ./graphs/er/mc.10.1+.1.ecg -m
+
+real	0m0.340s
+user	0m0.113s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00078125000000000000 -b 65536 -o ./graphs/er/mc.10.1-.1.ecg -m
+
+real	0m0.325s
+user	0m0.105s
+sys	0m0.132s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00676901543515571591 -b 65536 -o ./graphs/er/mc.10.L.2.ecg -m
+
+real	0m0.317s
+user	0m0.086s
+sys	0m0.139s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00812281852218685909 -b 65536 -o ./graphs/er/mc.10.L+.2.ecg -m
+
+real	0m0.324s
+user	0m0.087s
+sys	0m0.157s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00541521234812457272 -b 65536 -o ./graphs/er/mc.10.L-.2.ecg -m
+
+real	0m0.342s
+user	0m0.096s
+sys	0m0.147s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00097656250000000000 -b 65536 -o ./graphs/er/mc.10.1.2.ecg -m
+
+real	0m0.323s
+user	0m0.064s
+sys	0m0.168s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00117187500000000000 -b 65536 -o ./graphs/er/mc.10.1+.2.ecg -m
+
+real	0m0.333s
+user	0m0.081s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 1024 -p .00078125000000000000 -b 65536 -o ./graphs/er/mc.10.1-.2.ecg -m
+
+real	0m0.361s
+user	0m0.084s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00372295848933564375 -b 65536 -o ./graphs/er/mc.11.L.0.ecg -m
+
+real	0m0.319s
+user	0m0.105s
+sys	0m0.132s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00446755018720277250 -b 65536 -o ./graphs/er/mc.11.L+.0.ecg -m
+
+real	0m0.302s
+user	0m0.102s
+sys	0m0.113s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00297836679146851500 -b 65536 -o ./graphs/er/mc.11.L-.0.ecg -m
+
+real	0m0.351s
+user	0m0.076s
+sys	0m0.185s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00048828125000000000 -b 65536 -o ./graphs/er/mc.11.1.0.ecg -m
+
+real	0m0.337s
+user	0m0.113s
+sys	0m0.146s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00058593750000000000 -b 65536 -o ./graphs/er/mc.11.1+.0.ecg -m
+
+real	0m0.323s
+user	0m0.096s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00039062500000000000 -b 65536 -o ./graphs/er/mc.11.1-.0.ecg -m
+
+real	0m0.320s
+user	0m0.081s
+sys	0m0.148s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00372295848933564375 -b 65536 -o ./graphs/er/mc.11.L.1.ecg -m
+
+real	0m0.338s
+user	0m0.097s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00446755018720277250 -b 65536 -o ./graphs/er/mc.11.L+.1.ecg -m
+
+real	0m0.341s
+user	0m0.112s
+sys	0m0.127s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00297836679146851500 -b 65536 -o ./graphs/er/mc.11.L-.1.ecg -m
+
+real	0m0.345s
+user	0m0.102s
+sys	0m0.158s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00048828125000000000 -b 65536 -o ./graphs/er/mc.11.1.1.ecg -m
+
+real	0m0.345s
+user	0m0.106s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00058593750000000000 -b 65536 -o ./graphs/er/mc.11.1+.1.ecg -m
+
+real	0m0.326s
+user	0m0.089s
+sys	0m0.165s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00039062500000000000 -b 65536 -o ./graphs/er/mc.11.1-.1.ecg -m
+
+real	0m0.352s
+user	0m0.104s
+sys	0m0.141s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00372295848933564375 -b 65536 -o ./graphs/er/mc.11.L.2.ecg -m
+
+real	0m0.312s
+user	0m0.099s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00446755018720277250 -b 65536 -o ./graphs/er/mc.11.L+.2.ecg -m
+
+real	0m0.311s
+user	0m0.086s
+sys	0m0.128s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00297836679146851500 -b 65536 -o ./graphs/er/mc.11.L-.2.ecg -m
+
+real	0m0.354s
+user	0m0.099s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00048828125000000000 -b 65536 -o ./graphs/er/mc.11.1.2.ecg -m
+
+real	0m0.325s
+user	0m0.091s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00058593750000000000 -b 65536 -o ./graphs/er/mc.11.1+.2.ecg -m
+
+real	0m0.330s
+user	0m0.072s
+sys	0m0.160s
+mpirun -np 2 ./build/genmpig -n 2048 -p .00039062500000000000 -b 65536 -o ./graphs/er/mc.11.1-.2.ecg -m
+
+real	0m0.345s
+user	0m0.108s
+sys	0m0.172s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00203070463054671477 -b 65536 -o ./graphs/er/mc.12.L.0.ecg -m
+
+real	0m0.331s
+user	0m0.086s
+sys	0m0.146s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00243684555665605772 -b 65536 -o ./graphs/er/mc.12.L+.0.ecg -m
+
+real	0m0.328s
+user	0m0.097s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00162456370443737181 -b 65536 -o ./graphs/er/mc.12.L-.0.ecg -m
+
+real	0m0.329s
+user	0m0.091s
+sys	0m0.134s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00024414062500000000 -b 65536 -o ./graphs/er/mc.12.1.0.ecg -m
+
+real	0m0.342s
+user	0m0.104s
+sys	0m0.154s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00029296875000000000 -b 65536 -o ./graphs/er/mc.12.1+.0.ecg -m
+
+real	0m0.298s
+user	0m0.087s
+sys	0m0.133s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00019531250000000000 -b 65536 -o ./graphs/er/mc.12.1-.0.ecg -m
+
+real	0m0.307s
+user	0m0.077s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00203070463054671477 -b 65536 -o ./graphs/er/mc.12.L.1.ecg -m
+
+real	0m0.348s
+user	0m0.148s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00243684555665605772 -b 65536 -o ./graphs/er/mc.12.L+.1.ecg -m
+
+real	0m0.355s
+user	0m0.108s
+sys	0m0.166s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00162456370443737181 -b 65536 -o ./graphs/er/mc.12.L-.1.ecg -m
+
+real	0m0.341s
+user	0m0.129s
+sys	0m0.119s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00024414062500000000 -b 65536 -o ./graphs/er/mc.12.1.1.ecg -m
+
+real	0m0.338s
+user	0m0.076s
+sys	0m0.159s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00029296875000000000 -b 65536 -o ./graphs/er/mc.12.1+.1.ecg -m
+
+real	0m0.353s
+user	0m0.095s
+sys	0m0.162s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00019531250000000000 -b 65536 -o ./graphs/er/mc.12.1-.1.ecg -m
+
+real	0m0.296s
+user	0m0.078s
+sys	0m0.116s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00203070463054671477 -b 65536 -o ./graphs/er/mc.12.L.2.ecg -m
+
+real	0m0.295s
+user	0m0.074s
+sys	0m0.113s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00243684555665605772 -b 65536 -o ./graphs/er/mc.12.L+.2.ecg -m
+
+real	0m0.314s
+user	0m0.097s
+sys	0m0.170s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00162456370443737181 -b 65536 -o ./graphs/er/mc.12.L-.2.ecg -m
+
+real	0m0.332s
+user	0m0.066s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00024414062500000000 -b 65536 -o ./graphs/er/mc.12.1.2.ecg -m
+
+real	0m0.336s
+user	0m0.112s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00029296875000000000 -b 65536 -o ./graphs/er/mc.12.1+.2.ecg -m
+
+real	0m0.317s
+user	0m0.075s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 4096 -p .00019531250000000000 -b 65536 -o ./graphs/er/mc.12.1-.2.ecg -m
+
+real	0m0.310s
+user	0m0.078s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00109996500821280383 -b 65536 -o ./graphs/er/mc.13.L.0.ecg -m
+
+real	0m0.319s
+user	0m0.095s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00131995800985536460 -b 65536 -o ./graphs/er/mc.13.L+.0.ecg -m
+
+real	0m0.377s
+user	0m0.138s
+sys	0m0.144s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00087997200657024306 -b 65536 -o ./graphs/er/mc.13.L-.0.ecg -m
+
+real	0m0.355s
+user	0m0.105s
+sys	0m0.154s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00012207031250000000 -b 65536 -o ./graphs/er/mc.13.1.0.ecg -m
+
+real	0m0.348s
+user	0m0.108s
+sys	0m0.145s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00014648437500000000 -b 65536 -o ./graphs/er/mc.13.1+.0.ecg -m
+
+real	0m0.327s
+user	0m0.091s
+sys	0m0.143s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00009765625000000000 -b 65536 -o ./graphs/er/mc.13.1-.0.ecg -m
+
+real	0m0.322s
+user	0m0.099s
+sys	0m0.125s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00109996500821280383 -b 65536 -o ./graphs/er/mc.13.L.1.ecg -m
+
+real	0m0.322s
+user	0m0.098s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00131995800985536460 -b 65536 -o ./graphs/er/mc.13.L+.1.ecg -m
+
+real	0m0.335s
+user	0m0.121s
+sys	0m0.112s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00087997200657024306 -b 65536 -o ./graphs/er/mc.13.L-.1.ecg -m
+
+real	0m0.355s
+user	0m0.116s
+sys	0m0.149s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00012207031250000000 -b 65536 -o ./graphs/er/mc.13.1.1.ecg -m
+
+real	0m0.326s
+user	0m0.086s
+sys	0m0.142s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00014648437500000000 -b 65536 -o ./graphs/er/mc.13.1+.1.ecg -m
+
+real	0m0.329s
+user	0m0.088s
+sys	0m0.147s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00009765625000000000 -b 65536 -o ./graphs/er/mc.13.1-.1.ecg -m
+
+real	0m0.321s
+user	0m0.079s
+sys	0m0.154s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00109996500821280383 -b 65536 -o ./graphs/er/mc.13.L.2.ecg -m
+
+real	0m0.348s
+user	0m0.128s
+sys	0m0.125s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00131995800985536460 -b 65536 -o ./graphs/er/mc.13.L+.2.ecg -m
+
+real	0m0.322s
+user	0m0.136s
+sys	0m0.114s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00087997200657024306 -b 65536 -o ./graphs/er/mc.13.L-.2.ecg -m
+
+real	0m0.322s
+user	0m0.099s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00012207031250000000 -b 65536 -o ./graphs/er/mc.13.1.2.ecg -m
+
+real	0m0.325s
+user	0m0.105s
+sys	0m0.141s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00014648437500000000 -b 65536 -o ./graphs/er/mc.13.1+.2.ecg -m
+
+real	0m0.332s
+user	0m0.111s
+sys	0m0.130s
+mpirun -np 2 ./build/genmpig -n 8192 -p .00009765625000000000 -b 65536 -o ./graphs/er/mc.13.1-.2.ecg -m
+
+real	0m0.348s
+user	0m0.138s
+sys	0m0.130s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00059228885057612514 -b 65536 -o ./graphs/er/mc.14.L.0.ecg -m
+
+real	0m0.344s
+user	0m0.114s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00071074662069135017 -b 65536 -o ./graphs/er/mc.14.L+.0.ecg -m
+
+real	0m0.366s
+user	0m0.142s
+sys	0m0.147s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00047383108046090011 -b 65536 -o ./graphs/er/mc.14.L-.0.ecg -m
+
+real	0m0.342s
+user	0m0.127s
+sys	0m0.150s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00006103515625000000 -b 65536 -o ./graphs/er/mc.14.1.0.ecg -m
+
+real	0m0.326s
+user	0m0.098s
+sys	0m0.134s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00007324218750000000 -b 65536 -o ./graphs/er/mc.14.1+.0.ecg -m
+
+real	0m0.305s
+user	0m0.114s
+sys	0m0.104s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00004882812500000000 -b 65536 -o ./graphs/er/mc.14.1-.0.ecg -m
+
+real	0m0.307s
+user	0m0.087s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00059228885057612514 -b 65536 -o ./graphs/er/mc.14.L.1.ecg -m
+
+real	0m0.331s
+user	0m0.115s
+sys	0m0.122s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00071074662069135017 -b 65536 -o ./graphs/er/mc.14.L+.1.ecg -m
+
+real	0m0.348s
+user	0m0.114s
+sys	0m0.149s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00047383108046090011 -b 65536 -o ./graphs/er/mc.14.L-.1.ecg -m
+
+real	0m0.321s
+user	0m0.108s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00006103515625000000 -b 65536 -o ./graphs/er/mc.14.1.1.ecg -m
+
+real	0m0.311s
+user	0m0.106s
+sys	0m0.114s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00007324218750000000 -b 65536 -o ./graphs/er/mc.14.1+.1.ecg -m
+
+real	0m0.335s
+user	0m0.112s
+sys	0m0.124s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00004882812500000000 -b 65536 -o ./graphs/er/mc.14.1-.1.ecg -m
+
+real	0m0.331s
+user	0m0.107s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00059228885057612514 -b 65536 -o ./graphs/er/mc.14.L.2.ecg -m
+
+real	0m0.306s
+user	0m0.096s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00071074662069135017 -b 65536 -o ./graphs/er/mc.14.L+.2.ecg -m
+
+real	0m0.326s
+user	0m0.141s
+sys	0m0.127s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00047383108046090011 -b 65536 -o ./graphs/er/mc.14.L-.2.ecg -m
+
+real	0m0.310s
+user	0m0.083s
+sys	0m0.139s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00006103515625000000 -b 65536 -o ./graphs/er/mc.14.1.2.ecg -m
+
+real	0m0.307s
+user	0m0.081s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00007324218750000000 -b 65536 -o ./graphs/er/mc.14.1+.2.ecg -m
+
+real	0m0.328s
+user	0m0.098s
+sys	0m0.148s
+mpirun -np 2 ./build/genmpig -n 16384 -p .00004882812500000000 -b 65536 -o ./graphs/er/mc.14.1-.2.ecg -m
+
+real	0m0.352s
+user	0m0.129s
+sys	0m0.117s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00031729759852292418 -b 65536 -o ./graphs/er/mc.15.L.0.ecg -m
+
+real	0m0.379s
+user	0m0.177s
+sys	0m0.159s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00038075711822750902 -b 65536 -o ./graphs/er/mc.15.L+.0.ecg -m
+
+real	0m0.360s
+user	0m0.173s
+sys	0m0.147s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00025383807881833934 -b 65536 -o ./graphs/er/mc.15.L-.0.ecg -m
+
+real	0m0.368s
+user	0m0.133s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003051757812500000 -b 65536 -o ./graphs/er/mc.15.1.0.ecg -m
+
+real	0m0.349s
+user	0m0.119s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003662109375000000 -b 65536 -o ./graphs/er/mc.15.1+.0.ecg -m
+
+real	0m0.356s
+user	0m0.148s
+sys	0m0.128s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00002441406250000000 -b 65536 -o ./graphs/er/mc.15.1-.0.ecg -m
+
+real	0m0.333s
+user	0m0.108s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00031729759852292418 -b 65536 -o ./graphs/er/mc.15.L.1.ecg -m
+
+real	0m0.346s
+user	0m0.183s
+sys	0m0.097s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00038075711822750902 -b 65536 -o ./graphs/er/mc.15.L+.1.ecg -m
+
+real	0m0.353s
+user	0m0.174s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00025383807881833934 -b 65536 -o ./graphs/er/mc.15.L-.1.ecg -m
+
+real	0m0.335s
+user	0m0.141s
+sys	0m0.128s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003051757812500000 -b 65536 -o ./graphs/er/mc.15.1.1.ecg -m
+
+real	0m0.348s
+user	0m0.073s
+sys	0m0.169s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003662109375000000 -b 65536 -o ./graphs/er/mc.15.1+.1.ecg -m
+
+real	0m0.365s
+user	0m0.151s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00002441406250000000 -b 65536 -o ./graphs/er/mc.15.1-.1.ecg -m
+
+real	0m0.330s
+user	0m0.096s
+sys	0m0.146s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00031729759852292418 -b 65536 -o ./graphs/er/mc.15.L.2.ecg -m
+
+real	0m0.350s
+user	0m0.131s
+sys	0m0.145s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00038075711822750902 -b 65536 -o ./graphs/er/mc.15.L+.2.ecg -m
+
+real	0m0.380s
+user	0m0.122s
+sys	0m0.168s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00025383807881833934 -b 65536 -o ./graphs/er/mc.15.L-.2.ecg -m
+
+real	0m0.388s
+user	0m0.178s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003051757812500000 -b 65536 -o ./graphs/er/mc.15.1.2.ecg -m
+
+real	0m0.366s
+user	0m0.090s
+sys	0m0.162s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00003662109375000000 -b 65536 -o ./graphs/er/mc.15.1+.2.ecg -m
+
+real	0m0.379s
+user	0m0.126s
+sys	0m0.159s
+mpirun -np 2 ./build/genmpig -n 32768 -p .00002441406250000000 -b 65536 -o ./graphs/er/mc.15.1-.2.ecg -m
+
+real	0m0.352s
+user	0m0.113s
+sys	0m0.156s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00016922538587889289 -b 65536 -o ./graphs/er/mc.16.L.0.ecg -m
+
+real	0m0.378s
+user	0m0.168s
+sys	0m0.159s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00020307046305467147 -b 65536 -o ./graphs/er/mc.16.L+.0.ecg -m
+
+real	0m0.392s
+user	0m0.195s
+sys	0m0.172s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00013538030870311431 -b 65536 -o ./graphs/er/mc.16.L-.0.ecg -m
+
+real	0m0.387s
+user	0m0.174s
+sys	0m0.165s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001525878906250000 -b 65536 -o ./graphs/er/mc.16.1.0.ecg -m
+
+real	0m0.377s
+user	0m0.113s
+sys	0m0.166s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001831054687500000 -b 65536 -o ./graphs/er/mc.16.1+.0.ecg -m
+
+real	0m0.379s
+user	0m0.083s
+sys	0m0.203s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001220703125000000 -b 65536 -o ./graphs/er/mc.16.1-.0.ecg -m
+
+real	0m0.388s
+user	0m0.142s
+sys	0m0.164s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00016922538587889289 -b 65536 -o ./graphs/er/mc.16.L.1.ecg -m
+
+real	0m0.399s
+user	0m0.179s
+sys	0m0.172s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00020307046305467147 -b 65536 -o ./graphs/er/mc.16.L+.1.ecg -m
+
+real	0m0.395s
+user	0m0.212s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00013538030870311431 -b 65536 -o ./graphs/er/mc.16.L-.1.ecg -m
+
+real	0m0.394s
+user	0m0.176s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001525878906250000 -b 65536 -o ./graphs/er/mc.16.1.1.ecg -m
+
+real	0m0.366s
+user	0m0.102s
+sys	0m0.174s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001831054687500000 -b 65536 -o ./graphs/er/mc.16.1+.1.ecg -m
+
+real	0m0.377s
+user	0m0.124s
+sys	0m0.166s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001220703125000000 -b 65536 -o ./graphs/er/mc.16.1-.1.ecg -m
+
+real	0m0.354s
+user	0m0.103s
+sys	0m0.168s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00016922538587889289 -b 65536 -o ./graphs/er/mc.16.L.2.ecg -m
+
+real	0m0.378s
+user	0m0.188s
+sys	0m0.161s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00020307046305467147 -b 65536 -o ./graphs/er/mc.16.L+.2.ecg -m
+
+real	0m0.394s
+user	0m0.215s
+sys	0m0.170s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00013538030870311431 -b 65536 -o ./graphs/er/mc.16.L-.2.ecg -m
+
+real	0m0.403s
+user	0m0.193s
+sys	0m0.173s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001525878906250000 -b 65536 -o ./graphs/er/mc.16.1.2.ecg -m
+
+real	0m0.376s
+user	0m0.135s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001831054687500000 -b 65536 -o ./graphs/er/mc.16.1+.2.ecg -m
+
+real	0m0.367s
+user	0m0.117s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 65536 -p .00001220703125000000 -b 65536 -o ./graphs/er/mc.16.1-.2.ecg -m
+
+real	0m0.378s
+user	0m0.115s
+sys	0m0.165s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00008990098624816185 -b 65536 -o ./graphs/er/mc.17.L.0.ecg -m
+
+real	0m0.485s
+user	0m0.328s
+sys	0m0.149s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00010788118349779422 -b 65536 -o ./graphs/er/mc.17.L+.0.ecg -m
+
+real	0m0.419s
+user	0m0.303s
+sys	0m0.125s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00007192078899852948 -b 65536 -o ./graphs/er/mc.17.L-.0.ecg -m
+
+real	0m0.378s
+user	0m0.238s
+sys	0m0.117s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000762939453125000 -b 65536 -o ./graphs/er/mc.17.1.0.ecg -m
+
+real	0m0.331s
+user	0m0.139s
+sys	0m0.122s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000915527343750000 -b 65536 -o ./graphs/er/mc.17.1+.0.ecg -m
+
+real	0m0.358s
+user	0m0.191s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000610351562500000 -b 65536 -o ./graphs/er/mc.17.1-.0.ecg -m
+
+real	0m0.330s
+user	0m0.121s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00008990098624816185 -b 65536 -o ./graphs/er/mc.17.L.1.ecg -m
+
+real	0m0.434s
+user	0m0.315s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00010788118349779422 -b 65536 -o ./graphs/er/mc.17.L+.1.ecg -m
+
+real	0m0.421s
+user	0m0.296s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00007192078899852948 -b 65536 -o ./graphs/er/mc.17.L-.1.ecg -m
+
+real	0m0.394s
+user	0m0.257s
+sys	0m0.133s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000762939453125000 -b 65536 -o ./graphs/er/mc.17.1.1.ecg -m
+
+real	0m0.339s
+user	0m0.121s
+sys	0m0.132s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000915527343750000 -b 65536 -o ./graphs/er/mc.17.1+.1.ecg -m
+
+real	0m0.373s
+user	0m0.197s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000610351562500000 -b 65536 -o ./graphs/er/mc.17.1-.1.ecg -m
+
+real	0m0.353s
+user	0m0.155s
+sys	0m0.119s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00008990098624816185 -b 65536 -o ./graphs/er/mc.17.L.2.ecg -m
+
+real	0m0.439s
+user	0m0.307s
+sys	0m0.120s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00010788118349779422 -b 65536 -o ./graphs/er/mc.17.L+.2.ecg -m
+
+real	0m0.470s
+user	0m0.335s
+sys	0m0.159s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00007192078899852948 -b 65536 -o ./graphs/er/mc.17.L-.2.ecg -m
+
+real	0m0.405s
+user	0m0.269s
+sys	0m0.139s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000762939453125000 -b 65536 -o ./graphs/er/mc.17.1.2.ecg -m
+
+real	0m0.357s
+user	0m0.156s
+sys	0m0.152s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000915527343750000 -b 65536 -o ./graphs/er/mc.17.1+.2.ecg -m
+
+real	0m0.349s
+user	0m0.144s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 131072 -p .00000610351562500000 -b 65536 -o ./graphs/er/mc.17.1-.2.ecg -m
+
+real	0m0.353s
+user	0m0.128s
+sys	0m0.139s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00004759463977843862 -b 65536 -o ./graphs/er/mc.18.L.0.ecg -m
+
+real	0m0.520s
+user	0m0.485s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00005711356773412635 -b 65536 -o ./graphs/er/mc.18.L+.0.ecg -m
+
+real	0m0.518s
+user	0m0.513s
+sys	0m0.122s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00003807571182275090 -b 65536 -o ./graphs/er/mc.18.L-.0.ecg -m
+
+real	0m0.514s
+user	0m0.422s
+sys	0m0.171s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000381469726562500 -b 65536 -o ./graphs/er/mc.18.1.0.ecg -m
+
+real	0m0.370s
+user	0m0.234s
+sys	0m0.126s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000457763671875000 -b 65536 -o ./graphs/er/mc.18.1+.0.ecg -m
+
+real	0m0.367s
+user	0m0.180s
+sys	0m0.121s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000305175781250000 -b 65536 -o ./graphs/er/mc.18.1-.0.ecg -m
+
+real	0m0.366s
+user	0m0.155s
+sys	0m0.151s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00004759463977843862 -b 65536 -o ./graphs/er/mc.18.L.1.ecg -m
+
+real	0m0.521s
+user	0m0.462s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00005711356773412635 -b 65536 -o ./graphs/er/mc.18.L+.1.ecg -m
+
+real	0m0.542s
+user	0m0.485s
+sys	0m0.164s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00003807571182275090 -b 65536 -o ./graphs/er/mc.18.L-.1.ecg -m
+
+real	0m0.482s
+user	0m0.402s
+sys	0m0.141s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000381469726562500 -b 65536 -o ./graphs/er/mc.18.1.1.ecg -m
+
+real	0m0.370s
+user	0m0.219s
+sys	0m0.117s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000457763671875000 -b 65536 -o ./graphs/er/mc.18.1+.1.ecg -m
+
+real	0m0.342s
+user	0m0.170s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000305175781250000 -b 65536 -o ./graphs/er/mc.18.1-.1.ecg -m
+
+real	0m0.359s
+user	0m0.168s
+sys	0m0.124s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00004759463977843862 -b 65536 -o ./graphs/er/mc.18.L.2.ecg -m
+
+real	0m0.537s
+user	0m0.506s
+sys	0m0.137s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00005711356773412635 -b 65536 -o ./graphs/er/mc.18.L+.2.ecg -m
+
+real	0m0.525s
+user	0m0.522s
+sys	0m0.128s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00003807571182275090 -b 65536 -o ./graphs/er/mc.18.L-.2.ecg -m
+
+real	0m0.462s
+user	0m0.396s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000381469726562500 -b 65536 -o ./graphs/er/mc.18.1.2.ecg -m
+
+real	0m0.351s
+user	0m0.182s
+sys	0m0.115s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000457763671875000 -b 65536 -o ./graphs/er/mc.18.1+.2.ecg -m
+
+real	0m0.362s
+user	0m0.212s
+sys	0m0.096s
+mpirun -np 2 ./build/genmpig -n 262144 -p .00000305175781250000 -b 65536 -o ./graphs/er/mc.18.1-.2.ecg -m
+
+real	0m0.358s
+user	0m0.187s
+sys	0m0.128s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002511939321639816 -b 65536 -o ./graphs/er/mc.19.L.0.ecg -m
+
+real	0m0.731s
+user	0m0.870s
+sys	0m0.152s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00003014327185967779 -b 65536 -o ./graphs/er/mc.19.L+.0.ecg -m
+
+real	0m0.771s
+user	0m0.924s
+sys	0m0.173s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002009551457311853 -b 65536 -o ./graphs/er/mc.19.L-.0.ecg -m
+
+real	0m0.685s
+user	0m0.739s
+sys	0m0.193s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000190734863281250 -b 65536 -o ./graphs/er/mc.19.1.0.ecg -m
+
+real	0m0.410s
+user	0m0.309s
+sys	0m0.134s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000228881835937500 -b 65536 -o ./graphs/er/mc.19.1+.0.ecg -m
+
+real	0m0.398s
+user	0m0.251s
+sys	0m0.135s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000152587890625000 -b 65536 -o ./graphs/er/mc.19.1-.0.ecg -m
+
+real	0m0.390s
+user	0m0.234s
+sys	0m0.125s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002511939321639816 -b 65536 -o ./graphs/er/mc.19.L.1.ecg -m
+
+real	0m0.690s
+user	0m0.789s
+sys	0m0.180s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00003014327185967779 -b 65536 -o ./graphs/er/mc.19.L+.1.ecg -m
+
+real	0m0.730s
+user	0m0.884s
+sys	0m0.186s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002009551457311853 -b 65536 -o ./graphs/er/mc.19.L-.1.ecg -m
+
+real	0m0.758s
+user	0m0.903s
+sys	0m0.162s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000190734863281250 -b 65536 -o ./graphs/er/mc.19.1.1.ecg -m
+
+real	0m0.427s
+user	0m0.284s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000228881835937500 -b 65536 -o ./graphs/er/mc.19.1+.1.ecg -m
+
+real	0m0.422s
+user	0m0.286s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000152587890625000 -b 65536 -o ./graphs/er/mc.19.1-.1.ecg -m
+
+real	0m0.382s
+user	0m0.264s
+sys	0m0.117s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002511939321639816 -b 65536 -o ./graphs/er/mc.19.L.2.ecg -m
+
+real	0m0.678s
+user	0m0.840s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00003014327185967779 -b 65536 -o ./graphs/er/mc.19.L+.2.ecg -m
+
+real	0m0.777s
+user	0m0.970s
+sys	0m0.178s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00002009551457311853 -b 65536 -o ./graphs/er/mc.19.L-.2.ecg -m
+
+real	0m0.704s
+user	0m0.767s
+sys	0m0.172s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000190734863281250 -b 65536 -o ./graphs/er/mc.19.1.2.ecg -m
+
+real	0m0.426s
+user	0m0.328s
+sys	0m0.136s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000228881835937500 -b 65536 -o ./graphs/er/mc.19.1+.2.ecg -m
+
+real	0m0.386s
+user	0m0.252s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 524288 -p .00000152587890625000 -b 65536 -o ./graphs/er/mc.19.1-.2.ecg -m
+
+real	0m0.370s
+user	0m0.227s
+sys	0m0.130s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001322073327178850 -b 65536 -o ./graphs/er/mc.20.L.0.ecg -m
+
+real	0m1.206s
+user	0m1.816s
+sys	0m0.209s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001586487992614620 -b 65536 -o ./graphs/er/mc.20.L+.0.ecg -m
+
+real	0m1.271s
+user	0m1.857s
+sys	0m0.181s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001057658661743080 -b 65536 -o ./graphs/er/mc.20.L-.0.ecg -m
+
+real	0m1.057s
+user	0m1.443s
+sys	0m0.182s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000095367431640625 -b 65536 -o ./graphs/er/mc.20.1.0.ecg -m
+
+real	0m0.486s
+user	0m0.434s
+sys	0m0.127s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000114440917968750 -b 65536 -o ./graphs/er/mc.20.1+.0.ecg -m
+
+real	0m0.514s
+user	0m0.472s
+sys	0m0.131s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000076293945312500 -b 65536 -o ./graphs/er/mc.20.1-.0.ecg -m
+
+real	0m0.458s
+user	0m0.413s
+sys	0m0.116s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001322073327178850 -b 65536 -o ./graphs/er/mc.20.L.1.ecg -m
+
+real	0m1.090s
+user	0m1.609s
+sys	0m0.155s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001586487992614620 -b 65536 -o ./graphs/er/mc.20.L+.1.ecg -m
+
+real	0m2.036s
+user	0m2.603s
+sys	0m0.223s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001057658661743080 -b 65536 -o ./graphs/er/mc.20.L-.1.ecg -m
+
+real	0m1.034s
+user	0m1.435s
+sys	0m0.157s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000095367431640625 -b 65536 -o ./graphs/er/mc.20.1.1.ecg -m
+
+real	0m0.538s
+user	0m0.489s
+sys	0m0.138s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000114440917968750 -b 65536 -o ./graphs/er/mc.20.1+.1.ecg -m
+
+real	0m0.514s
+user	0m0.471s
+sys	0m0.140s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000076293945312500 -b 65536 -o ./graphs/er/mc.20.1-.1.ecg -m
+
+real	0m0.450s
+user	0m0.384s
+sys	0m0.129s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001322073327178850 -b 65536 -o ./graphs/er/mc.20.L.2.ecg -m
+
+real	0m1.106s
+user	0m1.660s
+sys	0m0.144s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001586487992614620 -b 65536 -o ./graphs/er/mc.20.L+.2.ecg -m
+
+real	0m1.364s
+user	0m1.987s
+sys	0m0.243s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00001057658661743080 -b 65536 -o ./graphs/er/mc.20.L-.2.ecg -m
+
+real	0m1.072s
+user	0m1.452s
+sys	0m0.177s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000095367431640625 -b 65536 -o ./graphs/er/mc.20.1.2.ecg -m
+
+real	0m0.526s
+user	0m0.443s
+sys	0m0.164s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000114440917968750 -b 65536 -o ./graphs/er/mc.20.1+.2.ecg -m
+
+real	0m0.510s
+user	0m0.447s
+sys	0m0.150s
+mpirun -np 2 ./build/genmpig -n 1048576 -p .00000076293945312500 -b 65536 -o ./graphs/er/mc.20.1-.2.ecg -m
+
+real	0m0.466s
+user	0m0.376s
+sys	0m0.155s
