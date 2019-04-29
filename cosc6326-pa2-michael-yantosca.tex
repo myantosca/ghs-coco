@@ -473,10 +473,23 @@
     \begin{theorem}
       \label{thm:bfs-coco}
       Algorithm~\ref{alg:bfs-coco} determines the connected components in an arbitrary graph
-      of $n$ vertices distributed over $k$ machines with communication complexity $O(???)$.
+      of $n$ vertices distributed over $k$ machines with communication complexity $O(nk + m))$.
     \end{theorem}
     \begin{proof}
-      Because reasons.
+      Each node must serve as either a BFS tree root or subroot or leaf. Each top-level
+      root found incurs by necessity $O(k)$ meta-messages of coordination since no
+      optimizations are made in the singleton case. In the event that the graph is
+      completely disconnected, this becomes $O(nk)$ total meta-messages.
+      \paragraph{}{
+        Suppose that the graph is connected to some degree. Each edge must be traversed by the
+        BFS: once during the broadcast phase, and once during the upcast phase. Thus,
+        the message count in this respect is $O(m)$.
+      }
+      \paragraph{}{
+        The communication complexity follows by simple addition. Whichever term is greater
+        will necessarily dominate. In highly connected graphs, $m$ will dominate. In
+        sparsely connected grpahs, $nk$ will dominate.
+      }
     \end{proof}
   }
 }
