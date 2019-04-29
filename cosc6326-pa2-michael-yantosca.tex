@@ -247,6 +247,64 @@
 
   \subsection{\texttt{bfs-coco}}{
     \paragraph{}{
+      The BFS algorithm for finding connected components is given below in Algorithm~\ref{alg:bfs-coco}.
+      For the sake of legibility, several helper functions and procedures are abstracted out
+      from the main body and presented following the main algorithm. In the implementation,
+      only Algorithm~\ref{alg:exchange} is actually abstracted out into a separate function.
+      All other sub-algorithms run within the main context to avoid unnecessary function call overhead,
+      particularly Algorithm~\ref{alg:machine-hash}.
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
+        \label{alg:bfs-coco}
+        \begin{algorithmic}
+          \REQUIRE{$k$, the process/machine rank}
+          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
+          \IF{$r = 0$}{
+            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[1,M_{61} - 1]$.}
+            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
+          }\ENDIF
+          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
+          \STATE{$(V_{in}, E_{in}) \gets \textsc{Load-Edge-To-Vertex-Centric}(F, k)$}
+
+          \STATE{Initialize exchange info $X_B$ for the broadcast phase.}
+          \STATE{Initialize exchange info $X_U$ for the upcast phase.}
+          \STATE{$T$ \gets \emptyset}
+          \COMMENT{component set}
+          \STATE{$B$ \gets \emptyset}
+          \COMMENT{broadcast vertex set}
+          \STATE{$U$ \gets \emptyset}
+          \COMMENT{upcast vertex set}
+          \STATE{$V_{out} \gets \emptyset$}
+          \COMMENT{finished vertex set}
+          \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+          \COMMENT{local termination condition}
+          \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+          \COMMENT{global termination condition}
+          \WHILE{$\neg \Omega$}{
+            \STATE{$i_{g,r} \gets \min\limits_{v \in V_{in}} i(v)$}
+            \STATE{$i_g \gets \min\limits_{r=0}^{k-1} i_{g,r}$}
+            \STATE{$m_g \gets \textsc{Machine-Hash}(h_a, h_b, k, i_g)$}
+            \STATE{$|g|_r \gets 0$}
+            \STATE{$|g| \gets 0$}
+            \IF{$r = m_g$}{
+              \STATE{$s(V_{in}[i_g]) \gets \textsc{broadcast}$}
+              \STATE{$B \gets B \cup \{ V_{in}[i_g] \}$}
+            }\ENDIF
+            \WHILE{$|g| = 0$}{
+              \STATE{Execute \textsc{BFS-Connected-Components-Broadcast} phase.}
+              \STATE{Execute \textsc{BFS-Connected-Components-Upcast} phase.}
+              \STATE{$|g| \gets \max_{r=0}^{k-1} |g|_r$}
+            }\ENDWHILE
+            \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+          }\ENDWHILE
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Exchange}, Machine-wise Exchange of Information}
@@ -263,7 +321,8 @@
           }\ENDFOR
         \end{algorithmic}
       \end{algorithm}
-
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Machine-Hash}, Universal Hashing Function for Mapping Vertices to Machines}
@@ -277,7 +336,8 @@
           \RETURN{$((h_ai_v + h_b) \mod M_{61}) \mod k$}
         \end{algorithmic}
       \end{algorithm}
-
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Load-Edge-To-Vertex-Centric}, Distributed Algorithm for Loading an Edge-Centric Storage Model and Converting to a Vertex-Centric Memory Model}
@@ -329,126 +389,76 @@
           \RETURN{$(V_{in}, E_{in})$}
         \end{algorithmic}
       \end{algorithm}
-
+    }
+    \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{BFS-Connected-Components}, Distributed BFS Algorithm for Determining Connected Components in an Arbitrary Graph}
-        \label{alg:bfs-coco}
+        \caption{\textsc{BFS-Connected-Components-Upcast}, Broadcast Phase of Algorithm~\ref{alg:bfs-coco} }
+        \label{alg:bfs-coco-broadcast}
         \begin{algorithmic}
-          \REQUIRE{$k$, the process/machine rank}
-          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
-          \IF{$r = 0$}{
-            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[1,M_{61} - 1]$.}
-            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
-          }\ENDIF
-          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
-          \STATE{$(V_{in}, E_{in}) \gets \textsc{Load-Edge-To-Vertex-Centric}(F, k)$}
-
-          \STATE{Initialize exchange info $X_B$ for the broadcast phase.}
-          \STATE{Initialize exchange info $X_U$ for the upcast phase.}
-          \STATE{$T$ \gets \emptyset}
-          \COMMENT{component set}
-          \STATE{$B$ \gets \emptyset}
-          \COMMENT{broadcast vertex set}
-          \STATE{$U$ \gets \emptyset}
-          \COMMENT{upcast vertex set}
-          \STATE{$V_{out} \gets \emptyset$}
-          \COMMENT{finished vertex set}
-          \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
-          \COMMENT{local termination condition}
-          \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
-          \COMMENT{global termination condition}
-          \WHILE{$\neg \Omega$}{
-            \STATE{$i_{g,r} \gets \min\limits_{v \in V_{in}} i(v)$}
-            \STATE{$i_g \gets \min\limits_{r=0}^{k-1} i_{g,r}$}
-            \STATE{$m_g \gets \textsc{Machine-Hash}(h_a, h_b, k, i_g)$}
-            \STATE{$|g|_r \gets 0$}
-            \STATE{$|g| \gets 0$}
-            \IF{$r = m_g$}{
-              \STATE{$s(V_{in}[i_g]) \gets \textsc{broadcast}$}
-              \STATE{$B \gets B \cup \{ V_{in}[i_g] \}$}
+          \FORALL{$u \in B$}{
+            \STATE{$s(u) \gets \textsc{pending}$}
+            \FORALL{$i_v \in N(u)$}{
+              \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,i_v)$}
+              \STATE{$send(X_B)[m_v] \gets send(X_B)[m_v] \cup \{ i(u) \}$}
+            }\ENDFOR
+            \IF{$w(u) = 0$}{
+              \STATE{$U \gets U \cup \{ u \}$}
             }\ENDIF
-            \WHILE{$|g| = 0$}{
-              \STATE{Execute \textsc{BFS-Connected-Components-Broadcast} phase.}
-              \STATE{Execute \textsc{BFS-Connected-Components-Upcast} phase.}
-              \STATE{$|g| \gets \max_{r=0}^{k-1} |g|_r$}
-            }\ENDWHILE
-            \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
-            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
-          }\ENDWHILE
+          }\ENDFOR
+          \STATE{$\textsc{Exchange}(X_B)$}
+          \STATE{$\textsc{Rewind}(X_B)$}
+          \STATE{$B \gets \emptyset$}
+          \FORALL{$i_u \in recv(X_B)$}{
+            \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k,i_u)$}
+            \FORALL{$i_v \in E_{in}[i_u]$}{
+              \STATE{$v \gets V_{in}[i_v]$}
+              \IF{$s(v) = \textsc{ungrouped}$}{
+                \STATE{$i_p(v) \gets i_u$}
+                \STATE{$s(v) \gets \textsc{broadcast}$}
+                \STATE{$i_g(v) \gets i_g$}
+                \STATE{$B \gets B \cup \{ v \}$}
+              }\ELSE{
+                \STATE{$send(X_U)[m_u] \gets send(X_U)[m_u] + (i_u, i(v), 0)$}
+              }\ENDIF
+            }\ENDFOR
+          }\ENDFOR
         \end{algorithmic}
       \end{algorithm}
     }
-    \begin{algorithm}
-      \footnotesize
-      \caption{\textsc{BFS-Connected-Components-Upcast}, Broadcast Phase of Algorithm~\ref{alg:bfs-coco} }
-      \label{alg:bfs-coco-broadcast}
-      \begin{algorithmic}
-        \FORALL{$u \in B$}{
-          \STATE{$s(u) \gets \textsc{pending}$}
-          \FORALL{$i_v \in N(u)$}{
-            \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,i_v)$}
-            \STATE{$send(X_B)[m_v] \gets send(X_B)[m_v] \cup \{ i(u) \}$}
-          }\ENDFOR
-          \IF{$w(u) = 0$}{
-            \STATE{$U \gets U \cup \{ u \}$}
-          }\ENDIF
-        }\ENDFOR
-        \STATE{$\textsc{Exchange}(X_B)$}
-        \STATE{$\textsc{Rewind}(X_B)$}
-        \STATE{$B \gets \emptyset$}
-        \FORALL{$i_u \in recv(X_B)$}{
-          \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k,i_u)$}
-          \FORALL{$i_v \in E_{in}[i_u]$}{
-            \STATE{$v \gets V_{in}[i_v]$}
-            \IF{$s(v) = \textsc{ungrouped}$}{
-              \STATE{$i_p(v) \gets i_u$}
-              \STATE{$s(v) \gets \textsc{broadcast}$}
-              \STATE{$i_g(v) \gets i_g$}
-              \STATE{$B \gets B \cup \{ v \}$}
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{BFS-Connected-Components-Upcast}, Upcast Phase of Algorithm~\ref{alg:bfs-coco} }
+        \label{alg:bfs-coco-upcast}
+        \begin{algorithmic}
+          \FORALL{$u \in U$}{
+            \STATE{$s(u) \gets \textsc{FINISHED}$}
+            \IF{$i(u) = i_g$}{
+              \STATE{$|g|_r \gets |g|(u)$}
             }\ELSE{
-              \STATE{$send(X_U)[m_u] \gets send(X_U)[m_u] + (i_u, i(v), 0)$}
+              \STATE{$m_p \gets \textsc{Machine-Hash}(h_a, h_b, k,i_p(u))$}
+              \STATE{$send(X_U)[m_p] \gets send(X_U)[m_p] + (i_p(u), i(u), |g|(u))$}
+              \STATE{$V_{out} \gets V_{out} \cup \{ u \}$}
             }\ENDIF
           }\ENDFOR
-        }\ENDFOR
-      \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-      \footnotesize
-      \caption{\textsc{BFS-Connected-Components-Upcast}, Upcast Phase of Algorithm~\ref{alg:bfs-coco} }
-      \label{alg:bfs-coco-upcast}
-      \begin{algorithmic}
-        \FORALL{$u \in U$}{
-          \STATE{$s(u) \gets \textsc{FINISHED}$}
-          \IF{$i(u) = i_g$}{
-            \STATE{$|g|_r \gets |g|(u)$}
-          }\ELSE{
-            \STATE{$m_p \gets \textsc{Machine-Hash}(h_a, h_b, k,i_p(u))$}
-            \STATE{$send(X_U)[m_p] \gets send(X_U)[m_p] + (i_p(u), i(u), |g|(u))$}
-            \STATE{$V_{out} \gets V_{out} \cup \{ u \}$}
-          }\ENDIF
-        }\ENDFOR
-        \STATE{$U \gets \emptyset$}
-        \STATE{$\textsc{Exchange}(X_U)$}
-        \STATE{$\textsc{Rewind}(X_U)$}
-        \FORALL{$(i_v, i_u, |g|_u) \in recv(X_U)$}{
-          \STATE{$v \gets V_{in}[i_v]$}
-          \STATE{$|g|(v) \gets |g|(v) + |g|_u$}
-          \IF{$|g|_u > 0$}{
-            \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
-          }\ENDIF
-          \STATE{$w(v) \gets w(v) - 1$}
-          \IF{$w(v) = 0$}{
-            \STATE{$U \gets U \cup \{ v \}$}
-          }\ENDIF
-        }\ENDFOR
-        \STATE{$V_{in} \gets V_{in} \setminus V_{out}$}
-      \end{algorithmic}
-    \end{algorithm}
-
-    \paragraph{}{
-      \TODO
+          \STATE{$U \gets \emptyset$}
+          \STATE{$\textsc{Exchange}(X_U)$}
+          \STATE{$\textsc{Rewind}(X_U)$}
+          \FORALL{$(i_v, i_u, |g|_u) \in recv(X_U)$}{
+            \STATE{$v \gets V_{in}[i_v]$}
+            \STATE{$|g|(v) \gets |g|(v) + |g|_u$}
+            \IF{$|g|_u > 0$}{
+              \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
+            }\ENDIF
+            \STATE{$w(v) \gets w(v) - 1$}
+            \IF{$w(v) = 0$}{
+              \STATE{$U \gets U \cup \{ v \}$}
+            }\ENDIF
+          }\ENDFOR
+          \STATE{$V_{in} \gets V_{in} \setminus V_{out}$}
+        \end{algorithmic}
+      \end{algorithm}
     }
 
     \begin{theorem}
@@ -523,6 +533,23 @@
       was used for development since they were available through the development
       laptop's package system, but the program compiled and ran on the \texttt{crill}
       cluster with g++-5.3.0 and MPI 3.0. The code requires the C++-11 standard.
+    }
+    \paragraph{}{
+      In order to facilitate rapid development, extensive use was made of the C++ STL
+      libraries. The vertex input map was a \texttt{std::map}\autocite{map}
+      of vertex structures keyed by vertex ID. In each vertex structure, the collections
+      of neighbors and BFS tree children were of type \texttt{std::unordered\_set<uint32\_t>}\autocite{unorderedset}.
+      The incoming edge map used to facilitate faster lookup on incoming messages was
+      accomplished with a \texttt{std::map<std::unordered\_set<uint32\_t>>}. The vertex output
+      map was a \texttt<std::vector>\autocite{vector} of vertex structures, but could just
+      as easily have been a \texttt{std::map} (and was in earlier development).
+    }
+    \paragraph{}{
+      Randomized elements\autocite{random} made use of the Mersenne twister PRNG \texttt{std::mt19937}\autocite{mt19337}
+      as the basis for all probabilistic distributions. The primary distributions used were
+      the \texttt{std::uniform\_int\_distribution}\autocite{uniformintdist},
+      \texttt{std::bernoulli\_distribution}\autocite{bernoullidist}, and
+      \texttt{std::binomial\_distribution}\autocite{binomialdist}.
     }
   }
 
@@ -791,9 +818,32 @@
       \end{figure}
     }
     \paragraph{}{
-      The real world graphs depicted in Figure~\ref{fig:bfs-coco-cplx-rw} 
+      The real world graphs depicted in Figure~\ref{fig:bfs-coco-cplx-rw} show the expected decrease
+      in both BFS and load time for smaller values of $k$, but there appears to be an inflection point
+      either at $k = 8$ (\texttt{ca-AstroPh}, \texttt{roadNet-Tx}) or $k = 16$ (\texttt{facebook}).
+      The increase in execution time is particularly notable in the ca-AstroPh graph. This probably
+      owes to the nature of the division of processes within the cluster for the experiments.
+      \begin{longtable}{c|c|c}
+        \textbf{$k$} & \textbf{Machines} & \textbf{Cores} \\
+        1 & 1 & 1 \\
+        2 & 1 & 2 \\
+        4 & 2 & 2 \\
+        8 & 2 & 4 \\
+        16 & 2 & 8 \\
+        32 & 4 & 8
+      \end{longtable}
+      At the higher values of $k$, there was likely more contention for resources within the given
+      machine since more processors were occupied per machine.
     }
-  }  
+    \paragraph{}{
+      Because the number of available machines were limited by outages and concurrent jobs from
+      other users, the experiments were done with a ceiling of 8 processes per machine.
+      It is difficult to say whether the 8 processes were mapped to independent cores or to core
+      hyperthreads since no constraints of that granularity were employed in the batch scripts.
+      Even if the processes were always mapped to independent cores, the contention for memory
+      and higher levels of cache could have created bottlenecks, especially in cases of large $n$.
+    }
+  }
 }
 
 \section{Conclusions}{
@@ -803,6 +853,20 @@
     population and perform an all-gather operation to ensure that the forest was up to date
     among all participating machines. There would be no need for broadcast or upcast phases,
     which would avoid superfluous messages in terms of voting, exchange, and termination checking.
+  }
+  \paragraph{}{
+    The Monte Carlo edge selection scheme appears to have enjoyed mild success as a simulacrum
+    for the exceedingly more time-consuming Las Vegas edge selection scheme. With some minor
+    tweaks, the former coould be improved to more correctly simulate the intensive Bernoulli
+    trials of the latter.
+  }
+  \paragraph{}{
+    The primary deficiency of the implementation is in its poor performance for high values of $k$.
+    Some careful thought will need to be given to overcome these issues. While using utilities
+    like \texttt{callgrind} uncovered major inefficiencies in the implementation, it was difficult
+    to test longer runs because of the inherent overhead that profiling utilities would add to an
+    already long execution time. A focus on moving as much computation as possible into the local
+    sphere would likely yield the best dividends.
   }
 }
 
