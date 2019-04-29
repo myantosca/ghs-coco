@@ -621,7 +621,7 @@
       The graph loading and construction times follow the expected decrease as $k$ scales out, but the BFS search times actually increase
       quite drastically in proportion to $k$. Since the graphs in Figure~\ref{fig:bfs-coco-cplx-mc-er1} are largely disconnected, it may
       be that the message overhead of voting on singleton roots may dominate the search time. Moreover, the single round of no-op gather
-      operations probably induce overhead, as well.
+      operations per singleton node probably induces overhead, as well.
     }
     \paragraph{}{
       \begin{figure}
