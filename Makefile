@@ -1,6 +1,7 @@
 LATEX=lualatex
 BIBER=biber
-REPORT_NAME=cosc6326-pa2-michael-yantosca
+PA2_REPORT_NAME=cosc6326-pa2-michael-yantosca
+FINAL_REPORT_NAME=cosc6326-final-michael-yantosca
 INCS=-I/usr/include/openmpi
 LIBS=-lmpi
 MPICPP=mpic++
@@ -17,7 +18,7 @@ exe: $(BUILDDIR) $(BUILDDIR)/txt2mpig $(BUILDDIR)/genmpig $(BUILDDIR)/bfs-coco
 $(BUILDDIR):
 	@mkdir -p $(BUILDDIR)
 
-doc: $(REPORT_NAME).pdf
+doc: $(PA2_REPORT_NAME).pdf $(FINAL_REPORT_NAME).pdf
 
 $(BUILDDIR)/%: $(BUILDDIR)/%.o
 	@$(MPICPP) $(CFLAGS) $^ -o $@ $(LIBS)

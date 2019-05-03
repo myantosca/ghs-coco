@@ -1,0 +1,579 @@
+\documentclass[11pt,epsf]{article}
+\usepackage{amssymb,amsmath,amsthm,amsfonts,mathrsfs,color}
+\usepackage{epsfig}
+\usepackage{latexsym}
+\usepackage{verbatim}
+\usepackage{setspace}
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+\usepackage{algorithmicext}
+\usepackage{ifthen}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage[utf8]{luainputenc}
+\usepackage[bibencoding=utf8,backend=biber]{biblatex}
+\addbibresource{cosc6326-final-michael-yantosca.bib}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{{\footnotesize{COSC6326 Final Project}}}
+\rhead{{\footnotesize{Michael Yantosca}}}
+
+\usepackage{longtable}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepgfplotslibrary{external}
+\usepgfplotslibrary{statistics}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{pgfplots.groupplots, external}
+\tikzexternalize[]
+\pgfplotsset{
+  tick label style={font=\footnotesize},
+  label style={font=\small},
+  legend style={font=\small},
+  compat=newest
+}
+\pgfplotstableset{
+  col sep=comma,
+  begin table=\begin{longtable},
+  end table=\end{longtable},
+  every head row/.append style={after row=\endhead}
+}
+
+\newtheorem{fact}{Fact}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{claim}{Claim}
+\newtheorem{remark}{Remark}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+\newtheorem{example}{Example}
+\newtheorem{observation}{Observation}
+\newtheorem{exercise}{Exercise}
+\newtheorem{statement}{Statement}
+\newtheorem{problem}{Problem}
+
+\newcommand{\TODO}[0]{\textbf{\color{red}{TODO}}}
+
+% \linregplots{title}{prefix}{suffix}{x}{y}
+\newcommand{\linregplots}[5]{
+  \nextgroupplot[title=#1]
+  \addplot [red, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k1#3.csv};
+  \addplot [red, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k1#3.csv};
+  \addplot [blue, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k2#3.csv};
+  \addplot [blue, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k2#3.csv};
+  \addplot [green, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k4#3.csv};
+  \addplot [green, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k4#3.csv};
+  \addplot [orange, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k8#3.csv};
+  \addplot [orange, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k8#3.csv};
+  \addplot [purple, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k16#3.csv};
+  \addplot [purple, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k16#3.csv};
+  \addplot [brown, only marks, mark size=0.5] table [x=#4, y=#5] {#2.k32#3.csv};
+  \addplot [brown, no markers] table [x=#4,y={create col/linear regression={y=#5}}] {#2.k32#3.csv};
+}
+
+\date{}
+\title{COSC6326 Programming Assignment 2}
+\author{Michael Yantosca}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Introduction}{
+  \paragraph{}{
+    The study of graph connectivity can yield insight into problem spaces in communication
+    efficiency. Knowing where links are in a given graph can inform routing and help determine
+    the best information dissemination strategies. Starting from a clean-room environment with
+    graphs whose edges are a function of randomness, universal properties about
+    graph connectivity may be uncovered that can then be applied to real-world examples
+    to further refine the theory. Previously, experiments were conducted that tested the efficacy
+    of a BFS algorithm in determining connected components, and a novel but incomplete method
+    of randomized graph generation was used to speed up the generation process. In this set of experiments,
+    the discovery of connected components through the use of the Gallager-Humblet-Spira (GHS) algorithm
+    is explored on the same set of Erdos-Renyi graphs\autocite[5]{pa2spec} and real world datasets from the
+    SNAP database\autocite{SNAP} for experimental consistency.
+  }
+}
+
+\section{Analysis}{
+  \subsection{\texttt{ghs-coco}}{
+    \paragraph{}{
+      The GHS algorithm for finding connected components is given below in Algorithm~\ref{alg:ghs-coco}.
+      For the sake of legibility, several helper functions and procedures are abstracted out
+      from the main body and presented following the main algorithm. In the implementation,
+      only Algorithm~\ref{alg:exchange} is actually abstracted out into a separate function.
+      All other sub-algorithms run within the main context to avoid unnecessary function call overhead,
+      particularly Algorithm~\ref{alg:machine-hash}.
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{GHS-Connected-Components}, GHS Algorithm Modified to Determine Connected Components in an Arbitrary Graph}
+        \label{alg:ghs-coco}
+        \begin{algorithmic}
+          \REQUIRE{$k$, the process/machine rank}
+          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
+          \IF{$r = 0$}{
+            \STATE{Sample $h_a$ from an independent uniform distribution $U_a$ over $[1,M_{61} - 1]$.}
+            \STATE{Sample $h_b$ from an independent uniform distribution $U_b$ over $[0,M_{61} - 1]$.}
+          }\ENDIF
+          \STATE{Distribute $h_a$ and $h_b$ to all machines.}
+          \STATE{$(V_r, E_r) \gets \textsc{Load-Edge-To-Vertex-Centric}(F, k)$}
+
+          \STATE{Initialize exchange info $X_{L}$ for the link phase.}
+          \STATE{Initialize exchange info $X_{M}$ for the merge phase.}
+          \STATE{$T_r \gets V_r$}
+          \COMMENT{local component set}
+          \STATE{$|R_r| \gets |V_r|$}
+          \STATE{$\omega_r \gets |R_r| = 0$}
+          \COMMENT{local termination = no more outgoing edges in $V_r$}
+          \STATE{$\Omega \gets \land_{r=1}^{k} \omega_r$}
+          \COMMENT{global termination = no more outgoing edges anywhere}
+          \WHILE{$\neg \Omega$}{
+            \STATE{$i_{g,r} \gets \min\limits_{v \in V_{in}} i(v)$}
+            \STATE{$i_g \gets \min\limits_{r=0}^{k-1} i_{g,r}$}
+            \STATE{$m_g \gets \textsc{Machine-Hash}(h_a, h_b, k, i_g)$}
+            \STATE{$|g|_r \gets 0$}
+            \STATE{$|g| \gets 0$}
+            \IF{$r = m_g$}{
+              \STATE{$s(V_{in}[i_g]) \gets \textsc{broadcast}$}
+              \STATE{$B \gets B \cup \{ V_{in}[i_g] \}$}
+            }\ENDIF
+
+            \WHILE{$|g| = 0$}{
+              \STATE{Execute \textsc{GHS-Connected-Components-Link} phase.}
+              \STATE{Execute \textsc{GHS-Connected-Components-Merge} phase.}
+              \STATE{$|g| \gets \max_{r=0}^{k-1} |g|_r$}
+            }\ENDWHILE
+            \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+          }\ENDWHILE
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Exchange}, Machine-wise Exchange of Information}
+        \label{alg:exchange}
+        \begin{algorithmic}
+          \REQUIRE{$X_i$, exchange information for machine $i$}
+          \REQUIRE{$send(X_i)[m]$, send buffer targeting machine $m$ from machine $i$}
+          \REQUIRE{$recv(X_m)$, receive buffer for machine $m$}
+          \REQUIRE{$k$, the number of machines participating}
+          \FOR{$m \in [0,k-1]$}{
+            \STATE{Machine $m$ gathers $len(send(X_i)[m])$ from all machines.}
+            \STATE{Machine $m$ allocates $\sum_{i=0}^{k-1} len(send(X_i)[m])$ for $recv(X_m)$.}
+            \STATE{$recv(X_m) \gets concat(\{ send(X_i)[m] \ | \  0 \leq i < k \})$}
+          }\ENDFOR
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Machine-Hash}, Universal Hashing Function for Mapping Vertices to Machines}
+        \label{alg:machine-hash}
+        \begin{algorithmic}
+          \REQUIRE{$M_{61}$, the Mersenne prime $2^{61} - 1$}
+          \REQUIRE{$h_a$, an integer in the range $[1,M_{61} - 1]$}
+          \REQUIRE{$h_b$, an integer in the range $[0,M_{61} - 1]$}
+          \REQUIRE{$k$, the number of machines}
+          \REQUIRE{$i_v$, the vertex id to be hashed to some machine $m_h$}
+          \RETURN{$((h_ai_v + h_b) \mod M_{61}) \mod k$}
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Load-Edge-To-Vertex-Centric}, Distributed Algorithm for Loading an Edge-Centric Storage Model and Converting to a Vertex-Centric Memory Model}
+        \label{alg:le2v}
+        \begin{algorithmic}
+          \REQUIRE{$F$, the binary-format, edge-centric graph model input file}
+          \STATE{Initialize edge exchange info $X_e$.}
+          \STATE{Open $F$ for reading.}
+          \STATE{$S_F \gets $ the input file size}
+          \STATE{$|E| \gets S_F / 8$}
+          \STATE{$|E|_{\bar{k}} \gets S_F / k$}
+          \STATE{$|E|_r \gets S_F \mod k$}
+          \IF{$r < |E|_r$}{
+            \STATE{$|E|_k \gets |E|_{\bar{k}} + 1$}
+          }
+          \ELSE{
+            \STATE{$|E|_k \gets |E|_{\bar{k}}$}
+          }\ENDIF
+          \STATE{Read $|E|_k$ bytes with offset proportional to $k$ into $E_r$.}
+          \STATE{Close $F$.}
+          \FOR{$i \in [0, |E|_k-1]$}{
+            \STATE{$e_{uv} \gets (E_r[2i],E_r[2i+1])$}
+            \STATE{$e_{vu} \gets (E_r[2i+1],E_r[2i])$}
+            \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k, e_{uv}[0])$}
+            \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, e_{vu}[0])$}
+            \STATE{Add $e_{uv}$ to the exchange buffer for $m_u$.}
+            \STATE{Add $e_{vu}$ to the exchange buffer for $m_v$.}
+          }\ENDFOR
+          \STATE{\textsc{Exchange}($X_e$)}
+          \STATE{$E_r \gets \emptyset$}
+          \FOR{$(i_u,i_v) \in E_{rcvd}$}{
+            \STATE{$u \gets V_r[i_u]$}
+            \IF{$u = \bot$}{
+              \STATE{$u \gets \{ i = i_p = i_g = u_e = v_e = i_u, |g| = 1, s = \bot, w = 0, N = \emptyset, C = \emptyset, M = \emptyset \}$}
+              \STATE{$V_r[i_u] \gets u$}
+            }\ENDIF
+            \IF{$i_u \neq i_v$}{
+              \STATE{$N(u) \gets N(u) \cup \{ i_v \}$}
+              \IF{$i_v \notin E_r$}{
+                \STATE{$E_r[i_v] \gets \emptyset$}
+              }\ENDIF
+              \STATE{$E_r[i_v] \gets E_r[i_v] \cup \{ i_u \}$}
+            }\ENDIF
+          }\ENDFOR
+          \RETURN{$(V_r, E_r)$}
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{GHS-Connected-Components-Link}, Link Phase of Algorithm~\ref{alg:ghs-coco} }
+        \label{alg:ghs-coco-link}
+        \begin{algorithmic}
+          \REQUIRE{$T_0$, the set of local component roots where $|M \cup N| = 0$}
+          \REQUIRE{$T_r$, the set of local component roots where $|M \cup N| > 0$}
+          \REQUIRE{$V_r$, the full set of local nodes}
+          \REQUIRE{$E_r$, the reverse lookup table of incoming edges}
+          \REQUIRE{$S_r \gets \emptyset$, the set of nodes sending messages}
+          \REQUIRE{$V_e \gets \emptyset$, the set of nodes holding minimum edges}
+          \REQUIRE{$|R_r|$, the number of nodes where $|N| > 0$}
+          \FORALL{$t \in T_r$}{
+            \IF{$M(t) = \emptyset$ and $N(t) = \emptyset$}{
+              \STATE{$s(t) \gets \textsc{test}$}
+              \STATE{$S_r \gets S_r \cup \{ t \}$}
+              \STATE{$|R_r| \gets |R_r| - 1$}
+            }\ELSE{
+              \STATE{$T_0 \gets T_0 \cup \{ t \}$}
+              \STATE{$T_r \gets T_r \setminus \{ t \}$}
+            }\ENDIF
+          }\ENDFOR
+          \STATE{$\omega_e \gets |V_e| = |T_r|$}
+          \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
+          \WHILE{$\neg \Omega_e$}{
+            \STATE{Execute \textsc{GHS-Connected-Components-Link-Send} phase.}
+            \STATE{Execute \textsc{GHS-Connected-Components-Link-Receive} phase.}
+            \STATE{$\omega_e \gets |V_e| = |T_r|$}
+            \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
+          }\ENDWHILE
+        \end{algorithmic}
+      \end{algorithm}
+    }
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{GHS-Connected-Components-Link-Send}, Send Phase of Algorithm~\ref{alg:ghs-coco-link} }
+        \label{alg:ghs-coco-link-send}
+        \begin{algorithmic}
+          \FORALL{$u \in S_r$}{
+              \IF{$s(u) = \textsc{test}$}{
+                \STATE{$i_v \gets \min\limits_{v \in N(u)} v$}
+                \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{ping}, i_v, i(u), i_g(u) )$}
+                \COMMENT{Test vertex $e_{min}$.}
+              }\ELSIF{$s(u) = \textsc{find}$}{
+                \STATE{$(u_e(u), v_e(u) \gets (u, \min\limits_{v \in N(u)} v)$}
+                \STATE{$s(u) = \textsc{wait}$}
+                \FORALL{$v \in C(u)$}{
+                  \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{find}, i_v, i(u), i_g(u) )$}
+                  \COMMENT{Downcast \textsc{find}.}
+                }\ENDFOR
+              }\ELSIF{$s(u) = \textsc{found}$}{
+                \IF{$i_g(u) \neq i(u)$}{
+                  \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{done}, p(v), u_e, v_e )$}
+                  \COMMENT{Upcast subtree $e_{min}$.}
+                }\ENDIF
+              }\ELSIF{$s(u) = \textsc{mwoe}$}{
+                \FORALL{$v \in C(u)$}{
+                  \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{mwoe}, i_v, U_e(u), v_e(u) )$}
+                  \COMMENT{Downcast \textsc{mwoe}.}
+                }\ENDFOR
+              }\ENDIF
+            }\ENDFOR
+
+            \STATE{$\textsc{Exchange}(X_S)$}
+            \STATE{$\textsc{Rewind}(X_S)$}
+            \STATE{$S_r \gets \emptyset$}
+        \end{algorithmic}
+      \end{algorithm}
+      Algorithm~\ref{alg:ghs-coco-link-send} is a straightforward breakdown based on \emph{vertex state}.
+    }
+    \paragraph{$s(u) = \textsc{state}$}{
+      The vertex sends a \textsc{ping} message along its minimum outgoing edge (here defined as the minimum
+      opposite node label). It expects a \textsc{pong} message from the node indicating the opposite node's
+      current group label.
+    }
+    \paragraph{$s(u) = \textsc{find}$}{
+      The vertex sends a \textsc{find} message to all its component subtree children. It expects all children
+      to reply with the minimum edge along their respective subtrees via the \textsc{found} message.
+    }
+    \paragraph{$s(u) = \textsc{found}$}{
+      The vertex sends a \textsc{found} message to its parent in the component subtree. This is the upcast
+      to the root of the component-wide minimum weight edge.
+    }
+    \paragraph{$s(u) = \textsc{mwoe}$}{
+      The vertex sends a \textsc{mwoe} message to all its component subchildren. It expects no response
+      since termination is determined by a counter incremented on the receiving end.
+    }
+
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{GHS-Connected-Components-Link-Receive}, Send Phase of Algorithm~\ref{alg:ghs-coco-link} }
+        \label{alg:ghs-coco-link-recv}
+        \begin{algorithmic}
+            \FORALL{$(q, i_v, a, b) \in recv(X_S)$}{
+              \STATE{$v \gets V_r[i_v]$}
+              \IF{$q = \textsc{ping}$}{
+                \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k, a)$}
+                \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{pong}, i_u, i_v, i_g(v) )$}
+                \COMMENT{Direct buffer dump.}
+              }\ELSIF{$q = \textsc{pong}$}{
+                \IF{$i_g(v) = b$}{
+                  \STATE{$M(v) \gets M(v) \cup \{ a \}$}
+                  \STATE{$N(v) \gets N(v) \setminus \{ a \}$}
+                }\ELSE{
+                  \STATE{$s(v) \gets \textsc{find}$}
+                  \STATE{$w(u) \gets |C(u)|$}
+                  \COMMENT{Found minimum incident edge.}
+                }\ENDIF
+                \IF{$|N(v)| > 0$}{
+                  \STATE{$S_r \gets S_r \cup \{ v \}$}
+                  \COMMENT{Try next edge.}
+                }\ELSE{
+                  \STATE{$|R_r| \gets |R_r| - 1$}
+                  \COMMENT{No more outgoing edges.}
+                }\ENDIF                
+              }\ELSIF{$q = \textsc{find}$}{
+                \STATE{$s(v) \gets \textsc{test}$}
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
+              }\ELSIF{$q = \textsc{found}$}{
+                \STATE{$w(v) \gets w(v) - 1$}
+                \IF{$(a,b) < (u_e, v_e)$}{
+                  \STATE{$(u_e, v_e) \gets (a,b)$}
+                }\ENDIF
+                \IF{$w(v) = 0$}{
+                  \IF{$g(u) \neq i(u)$}{
+                    \STATE{$s(v) = \textsc{found}$}
+                  }\ELSE{
+                    \STATE{$s(v) = \textsc{mwoe}$}
+                  }\ENDIF
+                  \STATE{$S_r \gets S_r \cup \{ v \}$}
+                }\ENDIF
+              }\ELSIF{$q = \textsc{mwoe}$}{
+                \STATE{$(u_e(v), v_e(v)) \gets (a,b)$}
+                \STATE{$|V_\omega| = |V_\omega| - 1$}
+                \STATE{$s(v) = \textsc{mwoe}$}
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
+                \IF{$u_e(v) = i(v)$}{
+                  \STATE{$V_e \gets V_e \cup \{ v \}$}
+                }\ENDIF
+              }\ENDIF              
+            }\ENDFOR
+        \end{algorithmic}
+      \end{algorithm}
+      Algorithm~\ref{alg:ghs-coco-link-recv} is a straightforward breakdown based on \emph{message type}.
+    }
+    \paragraph{$q = \textsc{ping}$}{
+      The vertex receives a \textsc{ping} message. Regardless of state, it needs to reply.
+      The send buffer has a message added with the recipient's group label. There is no need to
+      wait for the sending phase since we don't want to incur the overhead and complexity of
+      quasi-states or interfere with other state transitions.
+    }
+    \paragraph{$q = \textsc{pong}$}{
+      The pinger receives a reply. If the group labels are the same, the pinger must continue
+      to ping and is added back into the sender queue. The edge is moved to the inactive set $M$
+      so the next highest edge in $N$ can be chosen in the next sending phase. If the group
+      labels are different, the vertex transitions into the \textsc{find} state and is added to
+      the sender queue. The waiting counter is set. It will notify its children in the next sending phase.
+    }
+    \paragraph{$q = \textsc{find}$}{
+      Receiving this message indicates that it is the recipient's turn to find an incident minimum
+      weight edge. The vertex transitions into the \textsc{test} state and is added to the sender queue.
+      From this point forward, it acts as the root of its component subtree.
+    }
+    \paragraph{$q = \textsc{found}$}{
+      Receiving this message indicates that a child subtree has propagated its minimum edge to the subtree
+      root. The waiting counter is decremented. Once the counter hits zero (0), the vertex transitions
+      to the \textsc{found} state and is added to the sender queue to upcast its own minimum determination
+      to its parent.
+    }
+    \paragraph{$q = \textsc{mwoe}$}{
+      Receiving this message indicates that the root has chosen a MWOE to downcast through the tree.
+      The vertex accepts this MWOE and passes it on to its own subtree. It is added to the sender queue
+      for propagating the MWOE to its children. If the MWOE is incident to it, it adds itself to the
+      merging set $V_e$ to participate in the merging phase.
+    }
+
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{GHS-Connected-Components-Merge}, Merge Phase of Algorithm~\ref{alg:ghs-coco} }
+        \label{alg:ghs-coco-merge}
+        \begin{algorithmic}
+          \STATE{$V_F \gets \emptyset$}
+          \FORALL{$u \in V_e$}{
+            \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,v_e(u))$}
+            \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{join}, v_e(u), i(u) )$}
+          }\ENDFOR
+
+          \STATE{$\textsc{Exchange}(X_S)$}
+          \STATE{$\textsc{Rewind}(X_S)$}
+
+          \FORALL{$(\textsc{join}, i_v, i_u) \in recv(X_S)$}{
+            \STATE{$v \gets V_r[i_v]$}
+            \IF{$i_u = v_e(u)$ and $v > i_u$}{
+              \STATE{$V_F \gets V_F \cup \{ v \}$}
+              \STATE{$i_g(v) \gets v$}
+              \COMMENT{New fragment re-roots to $v$.}
+            }\ENDIF
+            \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
+            \COMMENT{Claim sender as child in new fragment.}
+            \STATE{$M(v) \gets M(v) \cup \{ i_u \}$}
+            \STATE{$N(v) \gets N(v) \setminus \{ i_u \}$}
+            \COMMENT{Move soon-to-be-internal edge out of active set.}
+          }\ENDFOR
+          \STATE{$|V_N| \gets |V_r| - |V_F| - |T_0|$}
+          \STATE{$\omega_F \gets |V_N| = 0$}
+          \STATE{$\Omega_F \gets \land_{r=1}^{k} \omega_F$}
+          \WHILE{$\neg \Omega_F$}{
+            \FORALL{$u \in V_F$}{
+              \FORALL{$i_v \in C(u)$}{
+                \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{new}, i_v, i(u), i_g(u) )$}              
+              }\ENDFOR
+            }\ENDFOR
+            
+            \STATE{$\textsc{Exchange}(X_S)$}
+            \STATE{$\textsc{Rewind}(X_S)$}
+            \STATE{$V_F \gets \emptyset$}
+            
+            \FORALL{$(\textsc{new}, i_v, i_u, g_u) \in recv(X_S)$}{
+              \STATE{$v \gets V_r[i_v]$}
+              \STATE{$i_g(v) \gets g_u$}
+              \STATE{$i_p(v) \gets i_u$}
+              \STATE{$V_F \gets V_F \cup \{ v \}$}
+            }\ENDFOR
+            \STATE{$\omega_F \gets |V_N| = 0$}
+            \STATE{$\Omega_F \gets \land_{r=1}^{k} \omega_F$}
+          }\ENDWHILE
+        \end{algorithmic}
+      \end{algorithm}
+    }
+
+    \begin{theorem}
+      \label{thm:ghs-coco}
+      Algorithm~\ref{alg:ghs-coco} determines the connected components in an arbitrary graph
+      of $n$ vertices distributed over $k$ machines with communication complexity $O(???))$.
+    \end{theorem}
+    \begin{proof}
+      Because reasons.
+    \end{proof}
+  }
+}
+
+\section{Results}{
+  \subsection{Test Procedures}{
+    \paragraph{}{
+      Tests to validate correctness were performed locally on a dual-core laptop
+      \footnote{2 x Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz.} running Pop!OS.
+      \footnote{An Ubuntu 18.04 variant.}
+      Tests for which results were collected systematically and graphed were
+      done on the UH \texttt{crill} cluster with the following parameters:
+      \begin{itemize}
+      \item{$n \in 2^{[10,20]}$, the total population size}
+      \item{$k \in \{1,2,4,8,16,32\}$, the number of distributed nodes}
+      \item{$\epsilon = 0.2$, the threshold error}
+      \item{$p$, the existential probability of a given edge,
+        \begin{align}
+          p &
+          \begin{cases}
+            < \frac{(1 - \epsilon)\ln n}{n} \\
+            = \frac{\ln n}{n} \\
+            > \frac{(1 + \epsilon)\ln n}{n} \\
+            < \frac{(1 - \epsilon)}{n} \\
+            = \frac{1}{n} \\
+            > \frac{(1 + \epsilon)}{n} \\
+          \end{cases}
+        \end{align}
+      }
+      \end{itemize}
+      Each parameter combination was executed on 3 pre-generated graphs
+      per regime. The graphs generated with the naive combinatorial edge
+      selection scheme only covered graphs with $n \leq 2^{17}$ because of
+      the immense time required for generation. However, this should still
+      provide enough data points to observe a general trend and make cogent
+      comparisons with the much faster but slightly incorrect binomial edge
+      selection scheme.
+    }
+    \paragraph{}{
+      Several executables contributed to the testing process:
+    }
+    \paragraph{\texttt{txt2mpig}}{
+      A utility program for converting SNAP edge-centric model text files
+      into a compact edge-centric binary format suitable for accessing via MP/IO.
+    }
+    \paragraph{\texttt{genmpig}}{
+      A utility program for generating Erdos-Renyi random graphs and saving
+      in a compact edge-centric binary format.
+    }
+    \paragraph{\texttt{bfs-coco}}{
+      A program which reads a compact edge-centric binary format file and
+      distributes the vertex-centric equivalent across a $k$-machine context
+      and subsequently executes Algorithm~\ref{alg:bfs-coco} on the distributed graph.
+    }
+    \paragraph{}{
+      The reader is directed to the accompanying \texttt{README.md} for
+      explicit usage instructions on the various programs as well as
+      for a deeper explanation of implementation considerations,
+      engineering tradeoffs, and known issues with the programs.
+    }
+    \paragraph{}{
+      It should be noted that the MPI 2.1 standard\autocite{MPI21} and g++-7.2
+      was used for development since they were available through the development
+      laptop's package system, but the program compiled and ran on the \texttt{crill}
+      cluster with g++-5.3.0 and MPI 3.0. The code requires the C++-11 standard.
+    }
+    \paragraph{}{
+      In order to facilitate rapid development, extensive use was made of the C++ STL
+      libraries. The vertex input map was a \texttt{std::map}\autocite{map}
+      of vertex structures keyed by vertex ID. In each vertex structure, the collections
+      of neighbors and BFS tree children were of type \texttt{std::unordered\_set<uint32\_t>}\autocite{unorderedset}.
+      The incoming edge map used to facilitate faster lookup on incoming messages was
+      accomplished with a \texttt{std::map<std::unordered\_set<uint32\_t>>}. The vertex output
+      map was a \texttt<std::vector>\autocite{vector} of vertex structures, but could just
+      as easily have been a \texttt{std::map} (and was in earlier development).
+    }
+    \paragraph{}{
+      Randomized elements\autocite{random} made use of the Mersenne twister PRNG \texttt{std::mt19937}\autocite{mt19337}
+      as the basis for all probabilistic distributions. The primary distributions used were
+      the \texttt{std::uniform\_int\_distribution}\autocite{uniformintdist},
+      \texttt{std::bernoulli\_distribution}\autocite{bernoullidist}, and
+      \texttt{std::binomial\_distribution}\autocite{binomialdist}.
+    }
+  }
+
+  \subsection{Erdos-Renyi Graphs}{
+  }
+  \subsection{Real-World Graphs}{
+  }
+  \subsection{Component Statistics}{
+  }
+}
+
+\section{Conclusions}{
+}
+
+\printbibliography
+\end{document}
