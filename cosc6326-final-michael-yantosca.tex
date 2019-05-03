@@ -125,28 +125,15 @@
           \STATE{Initialize exchange info $X_{M}$ for the merge phase.}
           \STATE{$T_r \gets V_r$}
           \COMMENT{local component set}
-          \STATE{$|R_r| \gets |V_r|$}
-          \STATE{$\omega_r \gets |R_r| = 0$}
+          \STATE{$w_r \gets |V_r|$}
+          \STATE{$\omega_r \gets w_r = 0$}
           \COMMENT{local termination = no more outgoing edges in $V_r$}
           \STATE{$\Omega \gets \land_{r=1}^{k} \omega_r$}
           \COMMENT{global termination = no more outgoing edges anywhere}
           \WHILE{$\neg \Omega$}{
-            \STATE{$i_{g,r} \gets \min\limits_{v \in V_{in}} i(v)$}
-            \STATE{$i_g \gets \min\limits_{r=0}^{k-1} i_{g,r}$}
-            \STATE{$m_g \gets \textsc{Machine-Hash}(h_a, h_b, k, i_g)$}
-            \STATE{$|g|_r \gets 0$}
-            \STATE{$|g| \gets 0$}
-            \IF{$r = m_g$}{
-              \STATE{$s(V_{in}[i_g]) \gets \textsc{broadcast}$}
-              \STATE{$B \gets B \cup \{ V_{in}[i_g] \}$}
-            }\ENDIF
-
-            \WHILE{$|g| = 0$}{
-              \STATE{Execute \textsc{GHS-Connected-Components-Link} phase.}
-              \STATE{Execute \textsc{GHS-Connected-Components-Merge} phase.}
-              \STATE{$|g| \gets \max_{r=0}^{k-1} |g|_r$}
-            }\ENDWHILE
-            \STATE{$\omega_{r} \gets V_{in} = \emptyset$}
+            \STATE{Execute \textsc{GHS-Connected-Components-Link} phase.}
+            \STATE{Execute \textsc{GHS-Connected-Components-Merge} phase.}
+            \STATE{$\omega_{r} \gets w_r = 0$}
             \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
           }\ENDWHILE
         \end{algorithmic}
@@ -247,22 +234,23 @@
           \REQUIRE{$S_r \gets \emptyset$, the set of nodes sending messages}
           \REQUIRE{$V_e \gets \emptyset$, the set of nodes holding minimum edges}
           \REQUIRE{$|R_r|$, the number of nodes where $|N| > 0$}
+          \REQUIRE{$w_r \gets T_r$, the number of components seeking an outgoing edge}
           \FORALL{$t \in T_r$}{
             \IF{$M(t) = \emptyset$ and $N(t) = \emptyset$}{
               \STATE{$s(t) \gets \textsc{test}$}
               \STATE{$S_r \gets S_r \cup \{ t \}$}
               \STATE{$|R_r| \gets |R_r| - 1$}
+              \STATE{$w_r \gets w_r - 1$}
             }\ELSE{
               \STATE{$T_0 \gets T_0 \cup \{ t \}$}
-              \STATE{$T_r \gets T_r \setminus \{ t \}$}
             }\ENDIF
           }\ENDFOR
-          \STATE{$\omega_e \gets |V_e| = |T_r|$}
+          \STATE{$\omega_e \gets w_r = 0$}
           \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
           \WHILE{$\neg \Omega_e$}{
             \STATE{Execute \textsc{GHS-Connected-Components-Link-Send} phase.}
             \STATE{Execute \textsc{GHS-Connected-Components-Link-Receive} phase.}
-            \STATE{$\omega_e \gets |V_e| = |T_r|$}
+            \STATE{$\omega_e \gets w_r = 0$}
             \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
           }\ENDWHILE
         \end{algorithmic}
@@ -377,7 +365,7 @@
                 \STATE{$s(v) = \textsc{mwoe}$}
                 \STATE{$S_r \gets S_r \cup \{ v \}$}
                 \IF{$u_e(v) = i(v)$}{
-                  \STATE{$V_e \gets V_e \cup \{ v \}$}
+                  \STATE{$w_r \gets w_r - 1$}
                 }\ENDIF
               }\ENDIF              
             }\ENDFOR
@@ -413,7 +401,7 @@
       Receiving this message indicates that the root has chosen a MWOE to downcast through the tree.
       The vertex accepts this MWOE and passes it on to its own subtree. It is added to the sender queue
       for propagating the MWOE to its children. If the MWOE is incident to it, it adds itself to the
-      merging set $V_e$ to participate in the merging phase.
+      merging set $T_r$ to participate in the merging phase.
     }
 
     \paragraph{}{
@@ -423,17 +411,20 @@
         \label{alg:ghs-coco-merge}
         \begin{algorithmic}
           \STATE{$V_F \gets \emptyset$}
-          \FORALL{$u \in V_e$}{
+          \FORALL{$u \in T_r$}{
             \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,v_e(u))$}
             \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{join}, v_e(u), i(u) )$}
           }\ENDFOR
 
+          \STATE{$T_r \gets \emptyset$}
           \STATE{$\textsc{Exchange}(X_S)$}
           \STATE{$\textsc{Rewind}(X_S)$}
 
           \FORALL{$(\textsc{join}, i_v, i_u) \in recv(X_S)$}{
             \STATE{$v \gets V_r[i_v]$}
             \IF{$i_u = v_e(u)$ and $v > i_u$}{
+              \STATE{$T_r \gets T_r \cup \{ v \}$}
+              \COMMENT{Only roots can be components.}
               \STATE{$V_F \gets V_F \cup \{ v \}$}
               \STATE{$i_g(v) \gets v$}
               \COMMENT{New fragment re-roots to $v$.}
