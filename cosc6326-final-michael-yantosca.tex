@@ -147,6 +147,7 @@
             \STATE{$\omega_{r} \gets w_r = 0$}
             \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
           }\ENDWHILE
+          \STATE{Execute \textsc{Gather-Local-Components} phase.}
         \end{algorithmic}
       \end{algorithm}
     }
@@ -278,13 +279,13 @@
                 }\ENDFOR
               }\ELSIF{$s(u) = \textsc{found}$}{
                 \IF{$i_g(u) \neq i(u)$}{
-                  \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{done}, p(v), u_e, v_e )$}
+                  \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{found}, p(v), u_e, v_e )$}
                   \COMMENT{Upcast subtree $e_{min}$.}
                 }\ENDIF
               }\ELSIF{$s(u) = \textsc{mwoe}$}{
                 \FORALL{$v \in C(u)$}{
                   \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
-                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{mwoe}, i_v, U_e(u), v_e(u) )$}
+                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{mwoe}, i_v, u_e(u), v_e(u) )$}
                   \COMMENT{Downcast \textsc{mwoe}.}
                 }\ENDFOR
               }\ENDIF
@@ -459,6 +460,66 @@
             \STATE{$\omega_F \gets w_N = 0$}
             \STATE{$\Omega_F \gets \land_{r=1}^{k} \omega_F$}
           }\ENDWHILE
+        \end{algorithmic}
+      \end{algorithm}
+    }
+
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Gather-Local-Components}, Final Phase of Algorithm~\ref{alg:ghs-coco} }
+        \label{alg:ghs-coco-gather}
+        \begin{algorithmic}
+          \FORALL{$u \in T_r$}{
+            \STATE{$w(u) \gets |C(u)|$}
+            \STATE{$S_r \gets S_r \cup \{ \u \}$}
+          }\ENDFOR
+
+          \STATE{$w_G \gets |S_r|$}
+          \STATE{$\omega_G \gets w_G = 0$}
+          \STATE{$\Omega_G \gets \land_{r=1}^{k} \omega_F$}
+          \WHILE{$\neg \Omega_G$}{
+            \FORALL{$u \in S_r$}{
+              \FORALL{$i_v \in C(u)$}{
+                \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( \textsc{ping}, i_v , i(u), \bot )$}
+              }\ENDFOR
+            }\ENDFOR
+
+            \STATE{$\textsc{Exchange}(X_S)$}
+            \STATE{$\textsc{Rewind}(X_S)$}
+            \STATE{$S_r \gets \emptyset$}
+
+            \FORALL{$(q, i_v, i_u, b) \in recv(X_S)$}{
+              \STATE{$v \gets V_r[i_v]$}
+              \IF{$q = \textsc{ping}$}{
+                \STATE{$w(v) \gets |C(v)|$}
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
+              }\ELSIF{$q = \textsc{pong}$}{
+                \STATE{$w(v) \gets w(v) - 1$}
+                \STATE{$|g|(v) \gets |g|(v) + b$}
+                \IF{$w(v) = 0$}{
+                  \IF{$g(v) = i(v)$}{
+                    \STATE{$w_G \gets w_G - 1$}
+                  }\ELSE{
+                    \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( \textsc{pong}, i_v , i(u), |g|(u) )$}
+                    \STATE{$S_r \gets S_r \cup \{ v \}$}
+                  }\ENDIF
+                }\ENDIF
+              }\ENDIF
+            }\ENDFOR
+            \STATE{$\omega_G \gets w_G = 0$}
+            \STATE{$\Omega_G \gets \land_{r=1}^{k} \omega_F$}
+          }\ENDWHILE
+
+          \FORALL{$t \in T_r$}{
+            \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( i(t), |g|(t) )$}
+          }\ENDFOR
+          \FORALL{$t \in T_0$}{
+            \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( i(t), 0 )$}
+          }\ENDFOR
+          \STATE{Gather $len(send(X_S)[0])$ from all machines to machine $m_0$.}
+          \STATE{Allocate $recv(X_S)$ at machine $m_0$.}
+          \STATE{Gather $send(X_S)[0]$ from all machines to machine $m_0$ at $recv(X_S)$.}
         \end{algorithmic}
       \end{algorithm}
     }
