@@ -195,6 +195,7 @@ int main(int argc, char *argv[]) {
   uint32_t local_vertices = 0, global_vertices = 0;
   uint64_t messages = 0, rounds = 0;
   int verbosity = 0;
+  bool debug = false;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &machines);
@@ -213,6 +214,9 @@ int main(int argc, char *argv[]) {
     }
     if (!strcmp("-vv", argv[a])) {
       if (verbosity < 2) { verbosity = 2; }
+    }
+    if (!strcmp("-g", argv[a])) {
+      debug = true;
     }
     a++;
   }
@@ -508,7 +512,7 @@ int main(int argc, char *argv[]) {
 	vertex_t *v = V_r[req.dst];
 
 	if (req.typ == FIND) {
-	  assert(v->state == IDLE);
+	  if (debug) { assert(v->state == IDLE); }
 	  v->awaiting = v->children.size();
 	  if (verbosity == 2) {
 	    std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
@@ -529,7 +533,7 @@ int main(int argc, char *argv[]) {
 	  exchange_info_send_buf_insert(ghs_xinfo, m_u, (uint32_t *)&rsp, 4);
 	}
 	else if (req.typ == PONG) {
-	  assert(v->state == FIND_TEST);
+	  if (debug) { assert(v->state == FIND_TEST); }
 	  if (verbosity == 2) {
 	    std::cerr << "PONG " << req.dst << " " << req.a << " " << req.b << std::endl;
 	  }
@@ -551,7 +555,7 @@ int main(int argc, char *argv[]) {
 	  S_r.push(v);
 	}
 	else if (req.typ == FOUND) {
-	  assert(v->state == FIND_WAIT);
+	  if (debug) { assert(v->state == FIND_WAIT); }
 	  if (verbosity == 2) {
 	    std::cerr << "FOUND " << req.dst << "  " << req.a << " " << req.b << std::endl;
 	  }
@@ -581,7 +585,7 @@ int main(int argc, char *argv[]) {
 	  }
 	}
 	else if (req.typ == MWOE) {
-	  assert(v->state == IDLE);
+	  if (debug) { assert(v->state == IDLE); }
 	  if (verbosity == 2) {
 	    std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
 	  }
