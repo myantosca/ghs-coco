@@ -498,7 +498,7 @@ int main(int argc, char *argv[]) {
 	  assert(v->state == IDLE);
 	  v->awaiting = v->children.size();
 	  std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
-	  v->state = FIND_SEND;
+	  v->state = FIND_TEST;
 	  S_r.push(v);
 	}
 	else if (req.typ == PING) {
