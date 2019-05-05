@@ -533,10 +533,15 @@ int main(int argc, char *argv[]) {
 	  std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << "(" << v->awaiting << ")" << std::endl;
 	  v->awaiting--;
 	  if (req.a != req.b) {
-	    if (v->mwoe.u != v->mwoe.u) {
-	      edge_t e_msg = req.a < req.b ? (edge_t){req.a, req.b} : (edge_t){ req.b, req.b };
-	      edge_t e_vtx = v->mwoe.u < v->mwoe.v ? (edge_t){ v->mwoe.u, v->mwoe.v } : (edge_t){ v->mwoe.v, v->mwoe.u };
-	      if ((e_msg.u < e_vtx.u) && (e_msg.v < e_vtx.v)) {
+	    if (v->mwoe.u != v->mwoe.v) {
+	      edge_t e_msg = (req.a < req.b
+			      ? (edge_t){ req.a, req.b}
+			      : (edge_t){ req.b, req.a });
+	      edge_t e_vtx = (v->mwoe.u < v->mwoe.v
+			      ? (edge_t){ v->mwoe.u, v->mwoe.v }
+			      : (edge_t){ v->mwoe.v, v->mwoe.u });
+	      if ((e_msg.u < e_vtx.u) ||
+		  ((e_msg.u == e_vtx.u) && (e_msg.v < e_vtx.v))) {
 		v->mwoe.u = req.a;
 		v->mwoe.v = req.b;
 	      }
