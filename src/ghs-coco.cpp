@@ -209,7 +209,10 @@ int main(int argc, char *argv[]) {
       if (a < argc) fname_in = argv[a];
     }
     if (!strcmp("-v", argv[a])) {
-      verbosity = 1;
+      if (verbosity < 1) { verbosity = 1; }
+    }
+    if (!strcmp("-vv", argv[a])) {
+      if (verbosity < 2) { verbosity = 2; }
     }
     a++;
   }
@@ -410,7 +413,7 @@ int main(int argc, char *argv[]) {
     while (!global_link_done) {
       int m_v;
       // Link send
-      std::cerr << "------ SEND ------" << std::endl;
+      if (verbosity == 2) { std::cerr << "---- SEND ----" << std::endl; }
       while (!S_r.empty()) {
 	quad_msg_t req;
 	vertex_t *u = S_r.front();
@@ -426,7 +429,9 @@ int main(int argc, char *argv[]) {
 	      req.b = u->group;
 	      m_v = MACHINE_HASH(req.dst);
 	      exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	      std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	      if (verbosity == 2) {
+		std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	      }
 	    }
 	  }
 	  else {
@@ -443,7 +448,9 @@ int main(int argc, char *argv[]) {
 	    req.b = u->group;
 	    m_v = MACHINE_HASH(req.dst);
 	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    if (verbosity == 2) {
+	      std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    }
 	  }
 	  else {
 	    // No more incident edges to check. MWOE is what it is.
@@ -465,7 +472,9 @@ int main(int argc, char *argv[]) {
 	    req.b = u->mwoe.v;
 	    m_v = MACHINE_HASH(req.dst);
 	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    if (verbosity == 2) {
+	      std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    }
 	  }
 	}
 	else if (u->state == MWOE_SEND) {
@@ -478,7 +487,9 @@ int main(int argc, char *argv[]) {
 	    req.b = u->mwoe.v;
 	    m_v = MACHINE_HASH(req.dst);
 	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    if (verbosity == 2) {
+	      std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+	    }
 	  }
 	}
       }
@@ -487,7 +498,9 @@ int main(int argc, char *argv[]) {
       // Reset, rewind.
       exchange_info_rewind(ghs_xinfo);
 
-      std::cerr << "------ RECV ------" << std::endl;
+      if (verbosity == 2) {
+	std::cerr << "---- RECV ----" << std::endl;
+      }
       // Link receive
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
 	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
@@ -497,12 +510,16 @@ int main(int argc, char *argv[]) {
 	if (req.typ == FIND) {
 	  assert(v->state == IDLE);
 	  v->awaiting = v->children.size();
-	  std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  if (verbosity == 2) {
+	    std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  }
 	  v->state = FIND_TEST;
 	  S_r.push(v);
 	}
 	else if (req.typ == PING) {
-	  std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  if (verbosity == 2) {
+	    std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  }
 	  rsp.typ = PONG;
 	  rsp.dst = req.a;
 	  rsp.a = v->id;
@@ -513,7 +530,9 @@ int main(int argc, char *argv[]) {
 	}
 	else if (req.typ == PONG) {
 	  assert(v->state == FIND_TEST);
-	  std::cerr << "PONG " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  if (verbosity == 2) {
+	    std::cerr << "PONG " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  }
 	  if (req.b == v->group) {
 	    // Keep testing.
 	    v->active_neighbors.erase(req.a);
@@ -523,6 +542,9 @@ int main(int argc, char *argv[]) {
 	    // Found a minimum edge.
 	    v->mwoe.u = v->id;
 	    v->mwoe.v = req.a;
+	    if (verbosity == 2) {
+	      std::cerr << "GOT " << v->id << " " << v->mwoe.u << " " << v->mwoe.v << std::endl;
+	    }
 	    v->state = FIND_SEND;
 	  }
 	  // Regardless of the PONG, take action next cycle.
@@ -530,7 +552,9 @@ int main(int argc, char *argv[]) {
 	}
 	else if (req.typ == FOUND) {
 	  assert(v->state == FIND_WAIT);
-	  std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << "(" << v->awaiting << ")" << std::endl;
+	  if (verbosity == 2) {
+	    std::cerr << "FOUND " << req.dst << "  " << req.a << " " << req.b << std::endl;
+	  }
 	  v->awaiting--;
 	  if (req.a != req.b) {
 	    if (v->mwoe.u != v->mwoe.v) {
@@ -558,7 +582,9 @@ int main(int argc, char *argv[]) {
 	}
 	else if (req.typ == MWOE) {
 	  assert(v->state == IDLE);
-	  std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  if (verbosity == 2) {
+	    std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+	  }
 
 	  if (v->id == req.a) {
 	    if (v->id != v->group) {
@@ -573,9 +599,6 @@ int main(int argc, char *argv[]) {
 
 	  S_r.push(v);
 	}
-	else {
-	  std::cerr << req.typ << " " << req.dst << " " << req.a << " " << req.b << std::endl;
-	}
       }
       // Link phase termination condition.
       local_link_done = (w_L == 0);
@@ -583,7 +606,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Merge Phase
-    std::cerr << "****** MERGE *******" << std::endl;
+    if (verbosity == 2) { std::cerr << "==== MERGE ====" << std::endl; }
     uint32_t joins = 0;
     // Join send
     for (auto &kv : T_r) {
@@ -607,11 +630,15 @@ int main(int argc, char *argv[]) {
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
 	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
 	vertex_t *v = V_r[req.dst];
-	std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
+	if (verbosity == 2) {
+	  std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
+	}
 	if (req.a == v->mwoe.v) {
 	  if (v->id > req.a) {
 	    if (v->parent != v->id) { v->children.insert(v->parent); }
-	    std::cerr << "***** " << v->id << " *****" << std::endl;
+	    if (verbosity == 2) {
+	      std::cerr << "ROOT " << v->id << std::endl;
+	    }
 	    v->parent = v->id;
 	    v->group = v->id;
 	    S_r.push(v);
@@ -650,7 +677,9 @@ int main(int argc, char *argv[]) {
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
 	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
 	vertex_t *v = V_r[req.dst];
-	std::cerr << "NEW " << req.dst << " " << req.a << " " << req.b << std::endl;
+	if (verbosity == 2) {
+	  std::cerr << "NEW " << req.dst << " " << req.a << " " << req.b << std::endl;
+	}
 	v->group = req.b;
 	if ((v->parent != v->id) && (v->parent != req.a)) { v->children.insert(v->parent); }
 	v->parent = req.a;
@@ -673,7 +702,6 @@ int main(int argc, char *argv[]) {
     messages += machines << 1;
   }
 
-  std::cerr << "merging" << std::endl;
   // Merge all local component lists into global component list.
   for (auto &kv : T_r) {
     kv.second->awaiting = kv.second->children.size();
@@ -684,7 +712,9 @@ int main(int argc, char *argv[]) {
   int local_census_done = (w_G == 0);
   int global_census_done = 0;
   MPI_Allreduce(&local_census_done, &global_census_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-  std::cerr << "CENSUS" << std::endl;
+  if (verbosity == 2) {
+    std::cerr << "==== CENSUS ====" << std::endl;
+  }
   while (!global_census_done) {
     while(! S_r.empty()) {
       vertex_t *u = S_r.front();
