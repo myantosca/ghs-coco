@@ -11,7 +11,7 @@ SRCDIR=./src
 
 all: exe doc
 
-exe: $(BUILDDIR) $(BUILDDIR)/txt2mpig $(BUILDDIR)/genmpig $(BUILDDIR)/bfs-coco
+exe: $(BUILDDIR) $(BUILDDIR)/txt2mpig $(BUILDDIR)/genmpig $(BUILDDIR)/bfs-coco $(BUILDDIR)/ghs-coco
 
 .PHONY: clean clean-exe
 
