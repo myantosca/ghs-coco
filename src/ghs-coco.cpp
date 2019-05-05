@@ -647,15 +647,13 @@ int main(int argc, char *argv[]) {
 	  v->group = v->id;
 	  S_r.insert(v);
 	  v->children.insert(req.a);
-	  v->inactive_neighbors.insert(req.a);
-	  v->active_neighbors.erase(req.a);
 	}
       }
       else {
 	v->children.insert(req.a);
-	v->inactive_neighbors.insert(req.a);
-	v->active_neighbors.erase(req.a);
       }
+      v->inactive_neighbors.insert(req.a);
+      v->active_neighbors.erase(req.a);
     }
 
     int local_merge_done = S_r.empty();
