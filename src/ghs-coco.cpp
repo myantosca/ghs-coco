@@ -399,7 +399,7 @@ int main(int argc, char *argv[]) {
       kv.second->state = FIND_TEST;
       // Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
       kv.second->mwoe.u = kv.second->id;
-      kv.second->mwoe.v = kv.second->id;      
+      kv.second->mwoe.v = kv.second->id;
       S_r.push(kv.second);
     }
 
@@ -447,7 +447,7 @@ int main(int argc, char *argv[]) {
 	  }
 	  else {
 	    // No more incident edges to check. MWOE is what it is.
-	    u->state = FIND_SEND;	    
+	    u->state = FIND_SEND;
 	    S_r.push(u);
 	  }
 	}
