@@ -659,6 +659,9 @@ int main(int argc, char *argv[]) {
 	v->children.erase(req.a);
 	v->inactive_neighbors.insert(req.a);
 	v->active_neighbors.erase(req.a);
+	// Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
+	v->mwoe.u = v->id;
+	v->mwoe.v = v->id;
 	T_r.erase(v->id);
 	S_r.push(v);
       }
