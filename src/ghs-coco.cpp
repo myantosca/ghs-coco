@@ -595,10 +595,6 @@ int main(int argc, char *argv[]) {
 	msg.a = u->id;
 	msg.b = u->group;
 	int m_v = MACHINE_HASH(msg.dst);
-	if (u->children.find(u->mwoe.v) != kv.second->children.end()) {
-	  u->children.erase(u->mwoe.v);
-	}
-	kv.second->parent = kv.second->mwoe.v;
 	exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
 	joins++;
       }
