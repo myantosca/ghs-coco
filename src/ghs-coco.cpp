@@ -418,7 +418,10 @@ int main(int argc, char *argv[]) {
       int m_v;
       // Link send
       if (verbosity == 2) { std::cerr << "---- SEND ----" << std::endl; }
-      for (vertex_t *u : S_r) {
+
+      while (!S_r.empty()) {
+	vertex_t *u = *S_r.begin();
+	S_r.erase(u);
 	quad_msg_t req;
 	if (u->state == FIND_SEND) {
 	  u->awaiting = u->children.size();
@@ -495,7 +498,7 @@ int main(int argc, char *argv[]) {
 	  }
 	}
       }
-      S_r.clear();
+
       // Exchange messages between all machines.
       exchange_all(ghs_xinfo, &messages);
       // Reset, rewind.
@@ -512,7 +515,6 @@ int main(int argc, char *argv[]) {
 
 	if (req.typ == FIND) {
 	  if (debug) { assert(v->state == IDLE); }
-	  v->awaiting = v->children.size();
 	  if (verbosity == 2) {
 	    std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
 	  }
