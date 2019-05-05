@@ -376,7 +376,7 @@ int main(int argc, char *argv[]) {
   memset(forest, 0, forest_sz);
   std::map<uint32_t, vertex_t *> T_r;
   std::map<uint32_t, vertex_t *> T_0;
-  std::queue<vertex_t *> S_r;
+  std::unordered_set<vertex_t *> S_r;
   // Separate singletons from connected vertices.
   for (auto &kv : V_r) {
     if (kv.second->inactive_neighbors.empty() && kv.second->active_neighbors.empty()) {
@@ -407,7 +407,7 @@ int main(int argc, char *argv[]) {
       // Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
       kv.second->mwoe.u = kv.second->id;
       kv.second->mwoe.v = kv.second->id;
-      S_r.push(kv.second);
+      S_r.insert(kv.second);
     }
 
     uint32_t w_L = V_r.size() - T_0.size();
@@ -418,10 +418,8 @@ int main(int argc, char *argv[]) {
       int m_v;
       // Link send
       if (verbosity == 2) { std::cerr << "---- SEND ----" << std::endl; }
-      while (!S_r.empty()) {
+      for (vertex_t *u : S_r) {
 	quad_msg_t req;
-	vertex_t *u = S_r.front();
-	S_r.pop();
 	if (u->state == FIND_SEND) {
 	  u->awaiting = u->children.size();
 	  if (u->awaiting > 0) {
@@ -440,7 +438,7 @@ int main(int argc, char *argv[]) {
 	  }
 	  else {
 	    u->state = FIND_RPLY;
-	    S_r.push(u);
+	    S_r.insert(u);
 	  }
 	}
 	else if (u->state == FIND_TEST) {
@@ -459,14 +457,14 @@ int main(int argc, char *argv[]) {
 	  else {
 	    // No more incident edges to check. MWOE is what it is.
 	    u->state = FIND_SEND;
-	    S_r.push(u);
+	    S_r.insert(u);
 	  }
 	}
 	else if (u->state == FIND_RPLY) {
 	  if (u->parent == u->id) {
 	    // At the root. Time to announce the MWOE.
 	    u->state = MWOE_SEND;
-	    S_r.push(u);
+	    S_r.insert(u);
 	  }
 	  else {
 	    u->state = IDLE;
@@ -497,6 +495,7 @@ int main(int argc, char *argv[]) {
 	  }
 	}
       }
+      S_r.clear();
       // Exchange messages between all machines.
       exchange_all(ghs_xinfo, &messages);
       // Reset, rewind.
@@ -518,7 +517,7 @@ int main(int argc, char *argv[]) {
 	    std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
 	  }
 	  v->state = FIND_TEST;
-	  S_r.push(v);
+	  S_r.insert(v);
 	}
 	else if (req.typ == PING) {
 	  if (verbosity == 2) {
@@ -552,7 +551,7 @@ int main(int argc, char *argv[]) {
 	    v->state = FIND_SEND;
 	  }
 	  // Regardless of the PONG, take action next cycle.
-	  S_r.push(v);
+	  S_r.insert(v);
 	}
 	else if (req.typ == FOUND) {
 	  if (debug) { assert(v->state == FIND_WAIT); }
@@ -581,7 +580,7 @@ int main(int argc, char *argv[]) {
 	  }
 	  if (v->awaiting == 0) {
 	    v->state = FIND_RPLY;
-	    S_r.push(v);
+	    S_r.insert(v);
 	  }
 	}
 	else if (req.typ == MWOE) {
@@ -601,7 +600,7 @@ int main(int argc, char *argv[]) {
 	  v->mwoe.v = req.b;
 	  v->state = MWOE_SEND;
 
-	  S_r.push(v);
+	  S_r.insert(v);
 	}
       }
       // Link phase termination condition.
@@ -645,7 +644,7 @@ int main(int argc, char *argv[]) {
 	    }
 	    v->parent = v->id;
 	    v->group = v->id;
-	    S_r.push(v);
+	    S_r.insert(v);
 	    v->children.insert(req.a);
 	    v->inactive_neighbors.insert(req.a);
 	    v->active_neighbors.erase(req.a);
@@ -663,9 +662,7 @@ int main(int argc, char *argv[]) {
     int global_merge_done = 0;
     MPI_Allreduce(&local_merge_done, &global_merge_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
     while (!global_merge_done) {
-      while (!S_r.empty()) {
-	vertex_t *u = S_r.front();
-	S_r.pop();
+      for (vertex_t *u : S_r) {
 	for (auto &id_v : u->children) {
 	  int m_v = MACHINE_HASH(id_v);
 	  quad_msg_t msg;
@@ -676,6 +673,7 @@ int main(int argc, char *argv[]) {
 	  exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
 	}
       }
+      S_r.clear();
       exchange_all(ghs_xinfo, &messages);
       exchange_info_rewind(ghs_xinfo);
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
@@ -694,7 +692,7 @@ int main(int argc, char *argv[]) {
 	v->mwoe.u = v->id;
 	v->mwoe.v = v->id;
 	T_r.erase(v->id);
-	S_r.push(v);
+	S_r.insert(v);
       }
       local_merge_done = S_r.empty();
       MPI_Allreduce(&local_merge_done, &global_merge_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
@@ -709,7 +707,7 @@ int main(int argc, char *argv[]) {
   // Merge all local component lists into global component list.
   for (auto &kv : T_r) {
     kv.second->awaiting = kv.second->children.size();
-    S_r.push(kv.second);
+    S_r.insert(kv.second);
   }
 
   uint32_t w_G = S_r.size();
@@ -720,10 +718,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "==== CENSUS ====" << std::endl;
   }
   while (!global_census_done) {
-    while(! S_r.empty()) {
-      vertex_t *u = S_r.front();
-      S_r.pop();
-
+    for (vertex_t *u : S_r) {
       if (u->awaiting == 0) {
 	if (u->group == u->id) {
 	  w_G--;
@@ -750,7 +745,7 @@ int main(int argc, char *argv[]) {
 	}
       }
     }
-
+    S_r.clear();
     exchange_all(ghs_xinfo, &messages);
     exchange_info_rewind(ghs_xinfo);
     for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
@@ -758,12 +753,12 @@ int main(int argc, char *argv[]) {
       vertex_t *v = V_r[req.dst];
       if (req.typ == PING) {
 	v->awaiting = v->children.size();
-	S_r.push(v);
+	S_r.insert(v);
       }
       else if (req.typ == PONG) {
 	v->awaiting--;
 	v->group_ct += req.b;
-	if (v->awaiting == 0) { S_r.push(v); }
+	if (v->awaiting == 0) { S_r.insert(v); }
       }
     }
     local_census_done = (w_G == 0);
