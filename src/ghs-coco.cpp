@@ -628,35 +628,33 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (joins) {
-      exchange_all(ghs_xinfo, &messages);
-      exchange_info_rewind(ghs_xinfo);
-      // Join receive
-      for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
-	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
-	vertex_t *v = V_r[req.dst];
-	if (verbosity == 2) {
-	  std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
-	}
-	if (req.a == v->mwoe.v) {
-	  if (v->id > req.a) {
-	    if (v->parent != v->id) { v->children.insert(v->parent); }
-	    if (verbosity == 2) {
-	      std::cerr << "ROOT " << v->id << std::endl;
-	    }
-	    v->parent = v->id;
-	    v->group = v->id;
-	    S_r.insert(v);
-	    v->children.insert(req.a);
-	    v->inactive_neighbors.insert(req.a);
-	    v->active_neighbors.erase(req.a);
+    exchange_all(ghs_xinfo, &messages);
+    exchange_info_rewind(ghs_xinfo);
+    // Join receive
+    for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
+      quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
+      vertex_t *v = V_r[req.dst];
+      if (verbosity == 2) {
+	std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
+      }
+      if (req.a == v->mwoe.v) {
+	if (v->id > req.a) {
+	  if (v->parent != v->id) { v->children.insert(v->parent); }
+	  if (verbosity == 2) {
+	    std::cerr << "ROOT " << v->id << std::endl;
 	  }
-	}
-	else {
+	  v->parent = v->id;
+	  v->group = v->id;
+	  S_r.insert(v);
 	  v->children.insert(req.a);
 	  v->inactive_neighbors.insert(req.a);
 	  v->active_neighbors.erase(req.a);
 	}
+      }
+      else {
+	v->children.insert(req.a);
+	v->inactive_neighbors.insert(req.a);
+	v->active_neighbors.erase(req.a);
       }
     }
 
