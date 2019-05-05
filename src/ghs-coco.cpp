@@ -616,6 +616,8 @@ int main(int argc, char *argv[]) {
 	    v->group = v->id;
 	    S_r.push(v);
 	    v->children.insert(req.a);
+	    v->inactive_neighbors.insert(req.a);
+	    v->active_neighbors.erase(req.a);
 	  }
 	}
 	else {
