@@ -420,83 +420,83 @@ int main(int argc, char *argv[]) {
       if (verbosity == 2) { std::cerr << "---- SEND ----" << std::endl; }
 
       while (!S_r.empty()) {
-	vertex_t *u = *S_r.begin();
-	S_r.erase(u);
-	quad_msg_t req;
-	if (u->state == FIND_SEND) {
-	  u->awaiting = u->children.size();
-	  if (u->awaiting > 0) {
-	    u->state = FIND_WAIT;
-	    for (auto &id_v : u->children) {
-	      req.typ = FIND;
-	      req.dst = id_v;
-	      req.a = u->id;
-	      req.b = u->group;
-	      m_v = MACHINE_HASH(req.dst);
-	      exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	      if (verbosity == 2) {
-		std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
-	      }
-	    }
-	  }
-	  else {
-	    u->state = FIND_RPLY;
-	    S_r.insert(u);
-	  }
-	}
-	else if (u->state == FIND_TEST) {
-	  if (u->active_neighbors.size() > 0) {
-	    // Edges left to check
-	    req.typ = PING;
-	    req.dst = *u->active_neighbors.begin();
-	    req.a = u->id;
-	    req.b = u->group;
-	    m_v = MACHINE_HASH(req.dst);
-	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    if (verbosity == 2) {
-	      std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
-	    }
-	  }
-	  else {
-	    // No more incident edges to check. MWOE is what it is.
-	    u->state = FIND_SEND;
-	    S_r.insert(u);
-	  }
-	}
-	else if (u->state == FIND_RPLY) {
-	  if (u->parent == u->id) {
-	    // At the root. Time to announce the MWOE.
-	    u->state = MWOE_SEND;
-	    S_r.insert(u);
-	  }
-	  else {
-	    u->state = IDLE;
-	    req.typ = FOUND;
-	    req.dst = u->parent;
-	    req.a = u->mwoe.u;
-	    req.b = u->mwoe.v;
-	    m_v = MACHINE_HASH(req.dst);
-	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    if (verbosity == 2) {
-	      std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << std::endl;
-	    }
-	  }
-	}
-	else if (u->state == MWOE_SEND) {
-	  u->state = IDLE;
-	  w_L--;
-	  for (auto &id_v : u->children) {
-	    req.typ = MWOE;
-	    req.dst = id_v;
-	    req.a = u->mwoe.u;
-	    req.b = u->mwoe.v;
-	    m_v = MACHINE_HASH(req.dst);
-	    exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
-	    if (verbosity == 2) {
-	      std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
-	    }
-	  }
-	}
+        vertex_t *u = *S_r.begin();
+        S_r.erase(u);
+        quad_msg_t req;
+        if (u->state == FIND_SEND) {
+          u->awaiting = u->children.size();
+          if (u->awaiting > 0) {
+            u->state = FIND_WAIT;
+            for (auto &id_v : u->children) {
+              req.typ = FIND;
+              req.dst = id_v;
+              req.a = u->id;
+              req.b = u->group;
+              m_v = MACHINE_HASH(req.dst);
+              exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
+              if (verbosity == 2) {
+                std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+              }
+            }
+          }
+          else {
+            u->state = FIND_RPLY;
+            S_r.insert(u);
+          }
+        }
+        else if (u->state == FIND_TEST) {
+          if (u->active_neighbors.size() > 0) {
+            // Edges left to check
+            req.typ = PING;
+            req.dst = *u->active_neighbors.begin();
+            req.a = u->id;
+            req.b = u->group;
+            m_v = MACHINE_HASH(req.dst);
+            exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
+            if (verbosity == 2) {
+              std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+            }
+          }
+          else {
+            // No more incident edges to check. MWOE is what it is.
+            u->state = FIND_SEND;
+            S_r.insert(u);
+          }
+        }
+        else if (u->state == FIND_RPLY) {
+          if (u->parent == u->id) {
+            // At the root. Time to announce the MWOE.
+            u->state = MWOE_SEND;
+            S_r.insert(u);
+          }
+          else {
+            u->state = IDLE;
+            req.typ = FOUND;
+            req.dst = u->parent;
+            req.a = u->mwoe.u;
+            req.b = u->mwoe.v;
+            m_v = MACHINE_HASH(req.dst);
+            exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
+            if (verbosity == 2) {
+              std::cerr << "FOUND " << req.dst << " " << req.a << " " << req.b << std::endl;
+            }
+          }
+        }
+        else if (u->state == MWOE_SEND) {
+          u->state = IDLE;
+          w_L--;
+          for (auto &id_v : u->children) {
+            req.typ = MWOE;
+            req.dst = id_v;
+            req.a = u->mwoe.u;
+            req.b = u->mwoe.v;
+            m_v = MACHINE_HASH(req.dst);
+            exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&req, 4);
+            if (verbosity == 2) {
+              std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+            }
+          }
+        }
       }
 
       // Exchange messages between all machines.
@@ -505,105 +505,105 @@ int main(int argc, char *argv[]) {
       exchange_info_rewind(ghs_xinfo);
 
       if (verbosity == 2) {
-	std::cerr << "---- RECV ----" << std::endl;
+        std::cerr << "---- RECV ----" << std::endl;
       }
       // Link receive
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
-	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
-	quad_msg_t rsp;
-	vertex_t *v = V_r[req.dst];
+        quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
+        quad_msg_t rsp;
+        vertex_t *v = V_r[req.dst];
 
-	if (req.typ == FIND) {
-	  if (debug) { assert(v->state == IDLE); }
-	  if (verbosity == 2) {
-	    std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
-	  }
-	  v->state = FIND_TEST;
-	  S_r.insert(v);
-	}
-	else if (req.typ == PING) {
-	  if (verbosity == 2) {
-	    std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
-	  }
-	  rsp.typ = PONG;
-	  rsp.dst = req.a;
-	  rsp.a = v->id;
-	  rsp.b = v->group;
-	  int m_u = MACHINE_HASH(rsp.dst);
-	  // No state change. Just respond.
-	  exchange_info_send_buf_insert(ghs_xinfo, m_u, (uint32_t *)&rsp, 4);
-	}
-	else if (req.typ == PONG) {
-	  if (debug) { assert(v->state == FIND_TEST); }
-	  if (verbosity == 2) {
-	    std::cerr << "PONG " << req.dst << " " << req.a << " " << req.b << std::endl;
-	  }
-	  if (req.b == v->group) {
-	    // Keep testing.
-	    v->active_neighbors.erase(req.a);
-	    v->inactive_neighbors.insert(req.a);
-	  }
-	  else {
-	    // Found a minimum edge.
-	    v->mwoe.u = v->id;
-	    v->mwoe.v = req.a;
-	    if (verbosity == 2) {
-	      std::cerr << "GOT " << v->id << " " << v->mwoe.u << " " << v->mwoe.v << std::endl;
-	    }
-	    v->state = FIND_SEND;
-	  }
-	  // Regardless of the PONG, take action next cycle.
-	  S_r.insert(v);
-	}
-	else if (req.typ == FOUND) {
-	  if (debug) { assert(v->state == FIND_WAIT); }
-	  if (verbosity == 2) {
-	    std::cerr << "FOUND " << req.dst << "  " << req.a << " " << req.b << std::endl;
-	  }
-	  v->awaiting--;
-	  if (req.a != req.b) {
-	    if (v->mwoe.u != v->mwoe.v) {
-	      edge_t e_msg = (req.a < req.b
-			      ? (edge_t){ req.a, req.b}
-			      : (edge_t){ req.b, req.a });
-	      edge_t e_vtx = (v->mwoe.u < v->mwoe.v
-			      ? (edge_t){ v->mwoe.u, v->mwoe.v }
-			      : (edge_t){ v->mwoe.v, v->mwoe.u });
-	      if ((e_msg.u < e_vtx.u) ||
-		  ((e_msg.u == e_vtx.u) && (e_msg.v < e_vtx.v))) {
-		v->mwoe.u = req.a;
-		v->mwoe.v = req.b;
-	      }
-	    }
-	    else {
-	      v->mwoe.u = req.a;
-	      v->mwoe.v = req.b;
-	    }
-	  }
-	  if (v->awaiting == 0) {
-	    v->state = FIND_RPLY;
-	    S_r.insert(v);
-	  }
-	}
-	else if (req.typ == MWOE) {
-	  if (debug) { assert(v->state == IDLE); }
-	  if (verbosity == 2) {
-	    std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
-	  }
+        if (req.typ == FIND) {
+          if (debug) { assert(v->state == IDLE); }
+          if (verbosity == 2) {
+            std::cerr << "FIND " << req.dst << " " << req.a << " " << req.b << std::endl;
+          }
+          v->state = FIND_TEST;
+          S_r.insert(v);
+        }
+        else if (req.typ == PING) {
+          if (verbosity == 2) {
+            std::cerr << "PING " << req.dst << " " << req.a << " " << req.b << std::endl;
+          }
+          rsp.typ = PONG;
+          rsp.dst = req.a;
+          rsp.a = v->id;
+          rsp.b = v->group;
+          int m_u = MACHINE_HASH(rsp.dst);
+          // No state change. Just respond.
+          exchange_info_send_buf_insert(ghs_xinfo, m_u, (uint32_t *)&rsp, 4);
+        }
+        else if (req.typ == PONG) {
+          if (debug) { assert(v->state == FIND_TEST); }
+          if (verbosity == 2) {
+            std::cerr << "PONG " << req.dst << " " << req.a << " " << req.b << std::endl;
+          }
+          if (req.b == v->group) {
+            // Keep testing.
+            v->active_neighbors.erase(req.a);
+            v->inactive_neighbors.insert(req.a);
+          }
+          else {
+            // Found a minimum edge.
+            v->mwoe.u = v->id;
+            v->mwoe.v = req.a;
+            if (verbosity == 2) {
+              std::cerr << "GOT " << v->id << " " << v->mwoe.u << " " << v->mwoe.v << std::endl;
+            }
+            v->state = FIND_SEND;
+          }
+          // Regardless of the PONG, take action next cycle.
+          S_r.insert(v);
+        }
+        else if (req.typ == FOUND) {
+          if (debug) { assert(v->state == FIND_WAIT); }
+          if (verbosity == 2) {
+            std::cerr << "FOUND " << req.dst << "  " << req.a << " " << req.b << std::endl;
+          }
+          v->awaiting--;
+          if (req.a != req.b) {
+            if (v->mwoe.u != v->mwoe.v) {
+              edge_t e_msg = (req.a < req.b
+                              ? (edge_t){ req.a, req.b}
+                              : (edge_t){ req.b, req.a });
+              edge_t e_vtx = (v->mwoe.u < v->mwoe.v
+                              ? (edge_t){ v->mwoe.u, v->mwoe.v }
+                              : (edge_t){ v->mwoe.v, v->mwoe.u });
+              if ((e_msg.u < e_vtx.u) ||
+                  ((e_msg.u == e_vtx.u) && (e_msg.v < e_vtx.v))) {
+                v->mwoe.u = req.a;
+                v->mwoe.v = req.b;
+              }
+            }
+            else {
+              v->mwoe.u = req.a;
+              v->mwoe.v = req.b;
+            }
+          }
+          if (v->awaiting == 0) {
+            v->state = FIND_RPLY;
+            S_r.insert(v);
+          }
+        }
+        else if (req.typ == MWOE) {
+          if (debug) { assert(v->state == IDLE); }
+          if (verbosity == 2) {
+            std::cerr << "MWOE " << req.dst << " " << req.a << " " << req.b << std::endl;
+          }
 
-	  if (v->id == req.a) {
-	    if (v->id != v->group) {
-	      // Fragment re-roots to vertex with minimum edge.
-	      T_r[v->id] = v;
-	      T_r.erase(v->group);
-	    }
-	  }
-	  v->mwoe.u = req.a;
-	  v->mwoe.v = req.b;
-	  v->state = MWOE_SEND;
+          if (v->id == req.a) {
+            if (v->id != v->group) {
+              // Fragment re-roots to vertex with minimum edge.
+              T_r[v->id] = v;
+              T_r.erase(v->group);
+            }
+          }
+          v->mwoe.u = req.a;
+          v->mwoe.v = req.b;
+          v->state = MWOE_SEND;
 
-	  S_r.insert(v);
-	}
+          S_r.insert(v);
+        }
       }
       // Link phase termination condition.
       local_link_done = (w_L == 0);
@@ -617,14 +617,14 @@ int main(int argc, char *argv[]) {
     for (auto &kv : T_r) {
       vertex_t *u = kv.second;
       if (u->active_neighbors.size() > 0) {
-	quad_msg_t msg;
-	msg.typ = JOIN;
-	msg.dst = u->mwoe.v;
-	msg.a = u->id;
-	msg.b = u->group;
-	int m_v = MACHINE_HASH(msg.dst);
-	exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
-	joins++;
+        quad_msg_t msg;
+        msg.typ = JOIN;
+        msg.dst = u->mwoe.v;
+        msg.a = u->id;
+        msg.b = u->group;
+        int m_v = MACHINE_HASH(msg.dst);
+        exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
+        joins++;
       }
     }
 
@@ -635,24 +635,24 @@ int main(int argc, char *argv[]) {
       quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
       vertex_t *v = V_r[req.dst];
       if (verbosity == 2) {
-	std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
+        std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
       }
       if (req.a == v->mwoe.v) {
-	if (v->id > req.a) {
-	  if (v->parent != v->id) { v->children.insert(v->parent); }
-	  if (verbosity == 2) {
-	    std::cerr << "ROOT " << v->id << std::endl;
-	  }
-	  v->parent = v->id;
-	  v->group = v->id;
+        if (v->id > req.a) {
+          if (v->parent != v->id) { v->children.insert(v->parent); }
+          if (verbosity == 2) {
+            std::cerr << "ROOT " << v->id << std::endl;
+          }
+          v->parent = v->id;
+          v->group = v->id;
           v->mwoe.u = v->id;
           v->mwoe.v = v->id;
-	  S_r.insert(v);
-	  v->children.insert(req.a);
-	}
+          S_r.insert(v);
+          v->children.insert(req.a);
+        }
       }
       else {
-	v->children.insert(req.a);
+        v->children.insert(req.a);
       }
       v->inactive_neighbors.insert(req.a);
       v->active_neighbors.erase(req.a);
@@ -664,48 +664,48 @@ int main(int argc, char *argv[]) {
     if (verbosity == 2) {
       std::cerr << "---- NEW [";
       for (vertex_t *u : S_r) {
-	std::cerr << " " << u->id;
+        std::cerr << " " << u->id;
       }
       std::cerr << " ] ----" << std::endl;
     }
     std::unordered_set<vertex_t *> Q_r;
     while (!global_merge_done) {
       for (vertex_t *u : S_r) {
-	for (auto &id_v : u->children) {
-	  int m_v = MACHINE_HASH(id_v);
-	  quad_msg_t msg;
-	  msg.typ = NEW;
-	  msg.dst = id_v;
-	  msg.a = u->id;
-	  msg.b = u->group;
-	  exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
-	}
+        for (auto &id_v : u->children) {
+          int m_v = MACHINE_HASH(id_v);
+          quad_msg_t msg;
+          msg.typ = NEW;
+          msg.dst = id_v;
+          msg.a = u->id;
+          msg.b = u->group;
+          exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
+        }
       }
       S_r.clear();
       exchange_all(ghs_xinfo, &messages);
       exchange_info_rewind(ghs_xinfo);
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
-	quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
-	vertex_t *v = V_r[req.dst];
-	if (verbosity == 2) {
-	  std::cerr << "NEW " << req.dst << " " << req.a << " " << req.b << std::endl;
-	}
-	v->group = req.b;
-	if ((v->parent != v->id) && (v->parent != req.a)) { v->children.insert(v->parent); }
-	v->parent = req.a;
-	v->children.erase(req.a);
-	v->children.erase(v->mwoe.u);
-	v->inactive_neighbors.insert(req.a);
-	v->active_neighbors.erase(req.a);
-	// Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
-	v->mwoe.u = v->id;
-	v->mwoe.v = v->id;
-	T_r.erase(v->id);
-	if (debug) {
-	  assert (Q_r.find(v) == Q_r.end());
-	  Q_r.insert(v);
-	}
-	S_r.insert(v);
+        quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
+        vertex_t *v = V_r[req.dst];
+        if (verbosity == 2) {
+          std::cerr << "NEW " << req.dst << " " << req.a << " " << req.b << std::endl;
+        }
+        v->group = req.b;
+        if ((v->parent != v->id) && (v->parent != req.a)) { v->children.insert(v->parent); }
+        v->parent = req.a;
+        v->children.erase(req.a);
+        v->children.erase(v->mwoe.u);
+        v->inactive_neighbors.insert(req.a);
+        v->active_neighbors.erase(req.a);
+        // Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
+        v->mwoe.u = v->id;
+        v->mwoe.v = v->id;
+        T_r.erase(v->id);
+        if (debug) {
+          assert (Q_r.find(v) == Q_r.end());
+          Q_r.insert(v);
+        }
+        S_r.insert(v);
       }
       local_merge_done = S_r.empty();
       MPI_Allreduce(&local_merge_done, &global_merge_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
@@ -733,29 +733,29 @@ int main(int argc, char *argv[]) {
   while (!global_census_done) {
     for (vertex_t *u : S_r) {
       if (u->awaiting == 0) {
-	if (u->group == u->id) {
-	  w_G--;
-	}
-	else {
-	  quad_msg_t msg;
-	  msg.typ = PONG;
-	  msg.dst = u->parent;
-	  msg.a = u->id;
-	  msg.b = u->group_ct;
-	  int m_v = MACHINE_HASH(u->parent);
-	  exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
-	}
+        if (u->group == u->id) {
+          w_G--;
+        }
+        else {
+          quad_msg_t msg;
+          msg.typ = PONG;
+          msg.dst = u->parent;
+          msg.a = u->id;
+          msg.b = u->group_ct;
+          int m_v = MACHINE_HASH(u->parent);
+          exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
+        }
       }
       else {
-	for (auto &id_v : u->children) {
-	  quad_msg_t msg;
-	  msg.typ = PING;
-	  msg.dst = id_v;
-	  msg.a = u->id;
-	  msg.b = 0;
-	  int m_v = MACHINE_HASH(id_v);
-	  exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
-	}
+        for (auto &id_v : u->children) {
+          quad_msg_t msg;
+          msg.typ = PING;
+          msg.dst = id_v;
+          msg.a = u->id;
+          msg.b = 0;
+          int m_v = MACHINE_HASH(id_v);
+          exchange_info_send_buf_insert(ghs_xinfo, m_v, (uint32_t *)&msg, 4);
+        }
       }
     }
     S_r.clear();
@@ -765,13 +765,13 @@ int main(int argc, char *argv[]) {
       quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
       vertex_t *v = V_r[req.dst];
       if (req.typ == PING) {
-	v->awaiting = v->children.size();
-	S_r.insert(v);
+        v->awaiting = v->children.size();
+        S_r.insert(v);
       }
       else if (req.typ == PONG) {
-	v->awaiting--;
-	v->group_ct += req.b;
-	if (v->awaiting == 0) { S_r.insert(v); }
+        v->awaiting--;
+        v->group_ct += req.b;
+        if (v->awaiting == 0) { S_r.insert(v); }
       }
     }
     local_census_done = (w_G == 0);
