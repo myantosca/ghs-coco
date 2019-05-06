@@ -659,6 +659,7 @@ int main(int argc, char *argv[]) {
     int local_merge_done = S_r.empty();
     int global_merge_done = 0;
     MPI_Allreduce(&local_merge_done, &global_merge_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+    std::unordered_set<vertex_t *> Q_r;
     while (!global_merge_done) {
       for (vertex_t *u : S_r) {
 	for (auto &id_v : u->children) {
@@ -691,6 +692,10 @@ int main(int argc, char *argv[]) {
 	v->mwoe.u = v->id;
 	v->mwoe.v = v->id;
 	T_r.erase(v->id);
+	if (debug) {
+	  assert (Q_r.find(v) == Q_r.end());
+	  Q_r.insert(v);
+	}
 	S_r.insert(v);
       }
       local_merge_done = S_r.empty();
