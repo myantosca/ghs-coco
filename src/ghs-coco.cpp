@@ -659,6 +659,13 @@ int main(int argc, char *argv[]) {
     int local_merge_done = S_r.empty();
     int global_merge_done = 0;
     MPI_Allreduce(&local_merge_done, &global_merge_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+    if (verbosity == 2) {
+      std::cerr << "---- NEW [";
+      for (vertex_t *u : S_r) {
+	std::cerr << " " << u->id;
+      }
+      std::cerr << " ] ----" << std::endl;
+    }
     std::unordered_set<vertex_t *> Q_r;
     while (!global_merge_done) {
       for (vertex_t *u : S_r) {
