@@ -194,7 +194,7 @@ void exchange_all(exchange_info_t *info, uint64_t *messages) {
 int main(int argc, char *argv[]) {
   int rank, machines;
   uint32_t local_vertices = 0, global_vertices = 0;
-  uint64_t messages = 0, rounds = 0;
+  uint64_t messages = 0, rounds = 0, phases = 0;
   int verbosity = 0;
   bool debug = false;
   MPI_Init(&argc, &argv);
@@ -306,6 +306,7 @@ int main(int argc, char *argv[]) {
 
   // Exchange edges.
   exchange_all(edges_xinfo, &messages);
+  rounds += machines;
 
   // Construct local vertex-centric model.
   std::map<uint32_t, vertex_t *> V_r;
@@ -502,6 +503,7 @@ int main(int argc, char *argv[]) {
 
       // Exchange messages between all machines.
       exchange_all(ghs_xinfo, &messages);
+      rounds += machines;
       // Reset, rewind.
       exchange_info_rewind(ghs_xinfo);
 
@@ -630,6 +632,7 @@ int main(int argc, char *argv[]) {
     }
 
     exchange_all(ghs_xinfo, &messages);
+    rounds += machines;
     exchange_info_rewind(ghs_xinfo);
     // Join receive
     for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
@@ -684,6 +687,7 @@ int main(int argc, char *argv[]) {
       }
       S_r.clear();
       exchange_all(ghs_xinfo, &messages);
+      rounds += machines;
       exchange_info_rewind(ghs_xinfo);
       for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
         quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
@@ -714,7 +718,7 @@ int main(int argc, char *argv[]) {
 
     local_done = (joins == 0);
     MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-
+    phases++;
     messages += machines << 1;
   }
 
@@ -761,6 +765,7 @@ int main(int argc, char *argv[]) {
     }
     S_r.clear();
     exchange_all(ghs_xinfo, &messages);
+    rounds += machines;
     exchange_info_rewind(ghs_xinfo);
     for (int i = 0; i < ghs_xinfo->recv_caps >> 2; i++) {
       quad_msg_t req = ((quad_msg_t *)ghs_xinfo->recv_buf)[i];
@@ -794,6 +799,7 @@ int main(int argc, char *argv[]) {
     exchange_info_send_buf_insert(ghs_xinfo, 0, (uint32_t *)&msg, 2);
   }
   exchange_one(ghs_xinfo, &messages, 0);
+  rounds++;
 
   // Capture finishing time for connected component search.
   time_point<system_clock, nanoseconds> tp_coco_b = system_clock::now();
@@ -816,10 +822,11 @@ int main(int argc, char *argv[]) {
     }
     std::stringstream output;
 
-    output << "n,k,M,r,Tp,Tc,f,cl,cm,cu,cv" << std::endl;
+    output << "n,k,M,p,r,Tp,Tc,f,cl,cm,cu,cv" << std::endl;
     output << global_vertices << ",";
     output << machines << ",";
     output << messages << ",";
+    output << phases << ",";
     output << rounds << ",";
     output << T0[0] << ",";
     output << T0[1] << ",";
