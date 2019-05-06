@@ -645,6 +645,8 @@ int main(int argc, char *argv[]) {
 	  }
 	  v->parent = v->id;
 	  v->group = v->id;
+          v->mwoe.u = v->id;
+          v->mwoe.v = v->id;
 	  S_r.insert(v);
 	  v->children.insert(req.a);
 	}
