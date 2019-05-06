@@ -31,9 +31,9 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	@$(BIBER) $*
 	@$(LATEX) -shell-escape $*.tex
 
-superclean: clean superclean-doc-$(REPORT_NAME)
+superclean: clean superclean-doc-$(FINAL_REPORT_NAME) superclean-doc-$(PA2_REPORT_NAME)
 
-clean: clean-doc-$(REPORT_NAME) clean-exe
+clean: clean-doc-$(FINAL_REPORT_NAME) clean-doc-$(PA2_REPORT_NAME) clean-exe
 	@find -name '*~' | xargs rm -f
 
 clean-exe:
