@@ -638,7 +638,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "JOIN " << req.dst << " " << req.a << " " << req.b << std::endl;
       }
       if (req.a == v->mwoe.v) {
-        if (v->id > req.a) {
+        if (v->id < req.a) {
           if (v->parent != v->id) { v->children.insert(v->parent); }
           if (verbosity == 2) {
             std::cerr << "ROOT " << v->id << std::endl;
