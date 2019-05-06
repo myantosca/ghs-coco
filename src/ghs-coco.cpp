@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 #include <iostream>
+#include <sstream>
 #include <chrono>
 #include <mpi.h>
 #include <queue>
@@ -813,23 +814,27 @@ int main(int argc, char *argv[]) {
       tree_popl_ess += (tree_popl - tree_popl_av0) * (tree_popl - tree_popl_av1);
       tree_popl_var = tree_popl_ess / (tree + 1);
     }
-    std::cout << "n,k,M,r,Tp,Tc,f,cl,cm,cu,cv" << std::endl;
-    std::cout << global_vertices << ",";
-    std::cout << machines << ",";
-    std::cout << messages << ",";
-    std::cout << rounds << ",";
-    std::cout << T0[0] << ",";
-    std::cout << T0[1] << ",";
-    std::cout << trees << ",";
-    std::cout << tree_popl_min << ",";
-    std::cout << tree_popl_av1 << ",";
-    std::cout << tree_popl_max << ",";
-    std::cout << tree_popl_var << std::endl;
+    std::stringstream output;
 
-    std::cout << "iC,nC" << std::endl;
+    output << "n,k,M,r,Tp,Tc,f,cl,cm,cu,cv" << std::endl;
+    output << global_vertices << ",";
+    output << machines << ",";
+    output << messages << ",";
+    output << rounds << ",";
+    output << T0[0] << ",";
+    output << T0[1] << ",";
+    output << trees << ",";
+    output << tree_popl_min << ",";
+    output << tree_popl_av1 << ",";
+    output << tree_popl_max << ",";
+    output << tree_popl_var << std::endl;
+
+    output << "iC,nC" << std::endl;
     for (int tree = 0; tree < trees; tree++) {
-      std::cout << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
+      output << forest[tree*2] << "," << forest[tree*2+1] << std::endl;
     }
+
+    std::cout << output.str();
   }
 
   // Clean up.
