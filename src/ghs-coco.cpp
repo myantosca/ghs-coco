@@ -153,8 +153,8 @@ void exchange_one(exchange_info_t *info, uint64_t *messages, int machine) {
   int received = 0;
   // Determine the receive sub-buffer element counts.
   MPI_Gather(&info->send_counts[machine], 1, MPI_INT,
-	     info->recv_counts, 1, MPI_INT,
-	     machine, MPI_COMM_WORLD);
+             info->recv_counts, 1, MPI_INT,
+             machine, MPI_COMM_WORLD);
   *messages += info->machines;
   // Only one machine is target of the gather operation at a time.
   if (info->rank == machine) {
@@ -175,8 +175,8 @@ void exchange_one(exchange_info_t *info, uint64_t *messages, int machine) {
   // Gather all the targeted send buffers on the target machine
   // in a contiguous array in order by sender rank.
   MPI_Gatherv(info->send_bufs[machine], info->send_counts[machine], MPI_UNSIGNED,
-	      info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
-	      machine, MPI_COMM_WORLD);
+              info->recv_buf, info->recv_counts, info->recv_displs, MPI_UNSIGNED,
+              machine, MPI_COMM_WORLD);
   *messages += received;
 }
 
@@ -684,6 +684,7 @@ int main(int argc, char *argv[]) {
 	if ((v->parent != v->id) && (v->parent != req.a)) { v->children.insert(v->parent); }
 	v->parent = req.a;
 	v->children.erase(req.a);
+	v->children.erase(v->mwoe.u);
 	v->inactive_neighbors.insert(req.a);
 	v->active_neighbors.erase(req.a);
 	// Defaults for MWOE = link to self (special meaning, i.e., no outgoing edge)
