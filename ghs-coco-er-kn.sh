@@ -6,12 +6,12 @@
 #SBATCH --nodelist crill-101,crill-102,crill-200,crill-201
 
 export TS="$(date +%Y-%m-%d.%H.%M.%S)"
-export DOUT="./results/bfs-coco/${K}/${N}/${TS}"
+export DOUT="./er-results/ghs-coco/${K}/${N}/${TS}"
 mkdir -p ${DOUT}
 
 for fname in $(find ./graphs/er/${N} -name '*.ecg'); do
     bname=$(basename $fname)
-    mpirun -np ${K} ./build/bfs-coco -i $fname 1> ${DOUT}/bfs-coco.${K}.$bname.out 2> /dev/null
+    mpirun -np ${K} ./build/ghs-coco -i $fname 1> ${DOUT}/ghs-coco.${K}.$bname.out 2> /dev/null
 done;
 
 
