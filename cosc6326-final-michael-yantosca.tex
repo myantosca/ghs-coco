@@ -486,33 +486,43 @@
         \label{alg:ghs-coco-merge}
         \begin{algorithmic}
           \FORALL{$u \in T_r$}{
-            \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,v_e(u))$}
-            \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{join}, v_e(u), i(u), \bot )$}
+            \IF{$|N(u)| > 0$}{
+              \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k,v_e(u))$}
+              \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{join}, v_e(u), i(u), i_g(u) )$}
+              \STATE{$n_j \gets n_j + 1$}
+              \COMMENT{Increment join counter to avoid premature termination.}
+            }\ENDIF
           }\ENDFOR
-          \STATE{$T_r \gets \emptyset$}
           \STATE{$\textsc{Exchange}(X_S)$}
           \STATE{$\textsc{Rewind}(X_S)$}
           \STATE{$S_r \gets \emptyset$}
-          \FORALL{$(\textsc{join}, i_v, i_u) \in recv(X_S)$}{
+
+          \FORALL{$(\textsc{join}, i_v, i_u, i_{g(u)}) \in recv(X_S)$}{
             \STATE{$v \gets V_r[i_v]$}
-            \IF{$i_u = v_e(u)$ and $v > i_u$}{
-              \STATE{$T_r \gets T_r \cup \{ v \}$}
-              \COMMENT{Only roots can be components.}
-              \STATE{$S_r \gets S_r \cup \{ v \}$}
-              \STATE{$i_g(v) \gets v$}
-              \COMMENT{New fragment re-roots to $v$.}
+            \IF{$i_u = v_e(u)$}{
+              \IF{$i_v < i_u$}{
+                \IF{$i_p(v) \neq i_v$}{
+                  \STATE{$C(v) \gets C(v) \cup \{ i_p(v) \}$}
+                }\ENDIF
+                \STATE{$i_p(v) \gets v$}
+                \STATE{$i_g(v) \gets v$}
+                \STATE{$(e_u(v), e_v(v)) \gets v$}
+                \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
+                \COMMENT{Combined root goes to the minimum vertex in a mutual join.}
+              }\ENDIF
+            }\ELSE{
+              \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
+              \COMMENT{Receiving a join means adopting the sender.}
             }\ENDIF
-            \STATE{$C(v) \gets C(v) \cup \{ i_u \}$}
-            \COMMENT{Claim sender as child in new fragment.}
             \STATE{$M(v) \gets M(v) \cup \{ i_u \}$}
             \STATE{$N(v) \gets N(v) \setminus \{ i_u \}$}
-            \COMMENT{Move soon-to-be-internal edge out of active set.}
+            \COMMENT{Prune joined edge.}
           }\ENDFOR
 
-          \STATE{$w_N \gets |V_r| - |T_0|$}
-          \STATE{$\omega_F \gets w_N = 0$}
-          \STATE{$\Omega_F \gets \land_{r=1}^{k} \omega_F$}
-          \WHILE{$\neg \Omega_F$}{
+          \STATE{$\omega_M \gets S_r = \emptyset$}
+          \STATE{$\Omega_M \gets \land_{r=1}^{k} \omega_M$}
+          \WHILE{$\neg \Omega_M$}{
             \FORALL{$u \in S_r$}{
               \FORALL{$i_v \in C(u)$}{
                 \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
@@ -527,11 +537,28 @@
             \FORALL{$(\textsc{new}, i_v, i_u, g_u) \in recv(X_S)$}{
               \STATE{$v \gets V_r[i_v]$}
               \STATE{$i_g(v) \gets g_u$}
+              \COMMENT{Regroup.}
+              \IF{$i_p(v) \neq i(v)$ and $i_p(v) \neq i_u$}{
+                \STATE{$C(v) \gets C(v) \cup \{ i_p(v) \}$}
+                \COMMENT{Adopt old parent.}
+              }\ENDIF
               \STATE{$i_p(v) \gets i_u$}
+              \STATE{$C(v) \gets C(v) \setminus i_u$}
+              \COMMENT{Reparent.}
+              \STATE{$M(v) \gets M(v) \cup \{ i_u \}$}
+              \STATE{$N(v) \gets N(v) \setminus \{ i_u \}$}
+              \COMMENT{Prune new parent edge.}
+              \STATE{$(e_u(v), e_v(v)) \gets v$}
+              \COMMENT{Reset MWOE.}
+              \STATE{$T_r \gets T_r \setminus \{ v \}$}
+              \COMMENT{Remove non-root from component roots.}
               \STATE{$S_r \gets S_r \cup \{ v \}$}
+              \COMMENT{Add to sender queue.}
             }\ENDFOR
-            \STATE{$\omega_F \gets w_N = 0$}
-            \STATE{$\Omega_F \gets \land_{r=1}^{k} \omega_F$}
+            \STATE{$\omega_M \gets S_r = \emptyset$}
+            \COMMENT{Local termination = no more \textsc{new} messages on this machine.}
+            \STATE{$\Omega_M \gets \land_{r=1}^{k} \omega_M$}
+            \COMMENT{Global termination = no more \textsc{new} messages anywhere.}
           }\ENDWHILE
         \end{algorithmic}
       \end{algorithm}
