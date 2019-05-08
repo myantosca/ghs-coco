@@ -89,7 +89,7 @@
     graph connectivity may be uncovered that can then be applied to real-world examples
     to further refine the theory. Previously, experiments were conducted that tested the efficacy
     of a BFS algorithm in determining connected components, and a novel but incomplete method
-    of randomized graph generation was used to speed up the generation process. In this set of experiments,
+    of randomized graph generation was used to speed up the generation process\autocite{bfs-coco}. In this set of experiments,
     the discovery of connected components through the use of the Gallager-Humblet-Spira (GHS) algorithm
     is explored on the same set of Erdos-Renyi graphs\autocite[5]{pa2spec} and real world datasets from the
     SNAP database\autocite{SNAP} for experimental consistency.
@@ -800,13 +800,13 @@
       The execution times for the GHS algorithm actually seem to model the expected decrease as $k$ scales out better than the
       BFS algorithm. The aforementioned exceptions for the higher values of $k$ still apply, likely for the same reasons.
       For the sparse graphs in Figure~\ref{fig:ghs-coco-cplx-mc-er1}, the decrease in execution time is an entire order
-      of magnitude. As predicted in the previous trials, removing the known singleton components from active participation
+      of magnitude. As predicted in the previous trials\autocite[19]{bfs-coco}, removing the known singleton components from active participation
       at the start seems to have had the desired effect. The message complexity is also substantially dropped.
       The reader is directed to Appendix A for a set of graphs directly comparing message and time complexity between
       the two algorithms.
     }
     \paragraph{}{
-      Unlike the graphs in the prior report which depicted the number of rounds, the graphs here depict the number of
+      Unlike the graphs in the prior report\autocite[11-16]{bfs-coco} which depicted the number of rounds, the graphs here depict the number of
       phases, with a phase consisting of one MWOE search and one merge. Within each subphase, multiple exchanges
       may occur to the order of the depth of the largest component's tree. Seen here, the number of phases is
       clearly a constant fraction of $O(\log_2 n)$, as the phase count barely reaches the neighborhood of 10
@@ -870,7 +870,7 @@
       algorithm could utilize broadcast techniques to keep the messages small in many cases, the simultaneous though pair-wise
       communication employed through most of the GHS algorithm seems to have been a detriment. Under this particular implementation,
       the GHS algorithm seems better suited to sparse graphs, as opposed to the previous implementation of the BFS algorithm, which
-      performed better with dense graphs.
+      performed better with dense graphs\autocite[11,19]{bfs-coco}.
     }
     %% Las Vegas
     \paragraph{}{
@@ -1253,7 +1253,7 @@
   }
   \paragraph{}{
     Component statistics are not included on account of redundancy. If one compares the graphs from
-    the report on the \texttt{bfs-coco} experiments with the component statistics from this report,
+    the report on the \texttt{bfs-coco} experiments with the component statistics from this report\autocite[18]{bfs-coco},
     one sees the exact same graph. This reproducibility implies an empirical corroboration of the
     correctness of both implementations or, at the very least, consistent wrongness.
   }
