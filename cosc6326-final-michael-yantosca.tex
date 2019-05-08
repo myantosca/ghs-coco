@@ -380,56 +380,63 @@
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{GHS-Connected-Components-Find-MWOE-Receive}, Send Phase of Algorithm~\ref{alg:ghs-coco-find-mwoe} }
+        \caption{\textsc{GHS-Connected-Components-Find-MWOE-Receive}, Receive Phase of Algorithm~\ref{alg:ghs-coco-find-mwoe} }
         \label{alg:ghs-coco-find-mwoe-recv}
         \begin{algorithmic}
             \FORALL{$(q, i_v, a, b) \in recv(X_S)$}{
               \STATE{$v \gets V_r[i_v]$}
               \IF{$q = \textsc{ping}$}{
                 \STATE{$m_u \gets \textsc{Machine-Hash}(h_a, h_b, k, a)$}
-                \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{pong}, i_u, i_v, i_g(v) )$}
+                \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{pong}, a, i_v, i_g(v) )$}
                 \COMMENT{Direct buffer dump.}
               }\ELSIF{$q = \textsc{pong}$}{
                 \IF{$i_g(v) = b$}{
                   \STATE{$M(v) \gets M(v) \cup \{ a \}$}
                   \STATE{$N(v) \gets N(v) \setminus \{ a \}$}
+                  \COMMENT{Keep testing.}
                 }\ELSE{
-                  \STATE{$s(v) \gets \textsc{find}$}
-                  \STATE{$w(u) \gets |C(u)|$}
+                  \STATE{$e_u(v) \gets i(v)$}
+                  \STATE{$e_v(v) \gets a$}
+                  \STATE{$s(v) \gets \textsc{FindSend}$}
                   \COMMENT{Found minimum incident edge.}
                 }\ENDIF
-                \IF{$|N(v)| > 0$}{
-                  \STATE{$S_r \gets S_r \cup \{ v \}$}
-                  \COMMENT{Try next edge.}
-                }\ELSE{
-                  \STATE{$w_r \gets w_r - 1$}
-                  \COMMENT{No more outgoing edges.}
-                }\ENDIF
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
               }\ELSIF{$q = \textsc{find}$}{
-                \STATE{$s(v) \gets \textsc{test}$}
+                \STATE{$s(v) \gets \textsc{FindTest}$}
                 \STATE{$S_r \gets S_r \cup \{ v \}$}
               }\ELSIF{$q = \textsc{found}$}{
                 \STATE{$w(v) \gets w(v) - 1$}
-                \IF{$(a,b) < (u_e, v_e)$}{
-                  \STATE{$(u_e, v_e) \gets (a,b)$}
+                \IF{$a \neq b$}{
+                  \IF{$e_u(v) \neq e_v(v)$}{
+                    \STATE{$e_{ab} \gets (\min(a,b), \max(a,b))$}
+                    \STATE{$e_{v} \gets (\min(e_u(v), e_v(v)), \max(e_u(v), e_v(v)))$}
+                    \IF{$e_{ab}[0] < e_{v}[0]$ or ($e_{ab}[0] == e_{v}[0]$ and $e_{ab}[1] < e_{v}[1]$)}{
+                      \STATE{$e_u(v) \gets a$}
+                      \STATE{$e_v(v) \gets b$}
+                      \COMMENT{Choose the edge with the smallest endpoints.}
+                    }\ENDIF
+                  }\ELSE{
+                    \STATE{$e_u(v) \gets a$}
+                    \STATE{$e_v(v) \gets b$}
+                    \COMMENT{Real edges take precedence over virtual edges.}
+                  }\ENDIF
                 }\ENDIF
                 \IF{$w(v) = 0$}{
-                  \IF{$g(u) \neq i(u)$}{
-                    \STATE{$s(v) = \textsc{found}$}
-                  }\ELSE{
-                    \STATE{$s(v) = \textsc{mwoe}$}
-                    \STATE{$T_r \gets T_r \setminus \{ v \}$}
-                  }\ENDIF
+                  \STATE{$s(v) \gets \textsc{FindReply}$}
                   \STATE{$S_r \gets S_r \cup \{ v \}$}
+                  \COMMENT{All children have responded. Transition to next state.}
                 }\ENDIF
               }\ELSIF{$q = \textsc{mwoe}$}{
-                \STATE{$(u_e(v), v_e(v)) \gets (a,b)$}
-                \STATE{$s(v) = \textsc{mwoe}$}
-                \STATE{$S_r \gets S_r \cup \{ v \}$}
-                \IF{$u_e(v) = i(v)$}{
-                  \STATE{$w_L \gets w_L - 1$}
-                  \STATE{$T_r \gets T_r \cup \{ v \}$}
+                \IF{$i(v) = a$} {
+                  \IF{$i(v) \neq i_g(v)$}{
+                    \STATE{$T_r \gets T_r \cup \{ v \}$}
+                    \STATE{$T_r \gets T_r \setminus V_r[i_g(v)]$}
+                    \COMMENT{Re-root fragment to vertex with MWOE.}
+                  }\ENDIF
                 }\ENDIF
+                \STATE{$(u_e(v), v_e(v)) \gets (a,b)$}
+                \STATE{$s(v) = \textsc{MwoeSend}$}
+                \STATE{$S_r \gets S_r \cup \{ v \}$}
               }\ENDIF
             }\ENDFOR
         \end{algorithmic}
@@ -446,25 +453,30 @@
       The pinger receives a reply. If the group labels are the same, the pinger must continue
       to ping and is added back into the sender queue. The edge is moved to the inactive set $M$
       so the next highest edge in $N$ can be chosen in the next sending phase. If the group
-      labels are different, the vertex transitions into the \textsc{find} state and is added to
-      the sender queue. The waiting counter is set. It will notify its children in the next sending phase.
+      labels are different, the vertex transitions into the \textsc{FindSend} state and is added to
+      the sender queue. It will notify its children in the next sending phase.
     }
     \paragraph{$q = \textsc{find}$}{
       Receiving this message indicates that it is the recipient's turn to find an incident minimum
-      weight edge. The vertex transitions into the \textsc{test} state and is added to the sender queue.
+      weight edge. The vertex transitions into the \textsc{FindTest} state and is added to the sender queue.
       From this point forward, it acts as the root of its component subtree.
     }
     \paragraph{$q = \textsc{found}$}{
       Receiving this message indicates that a child subtree has propagated its minimum edge to the subtree
-      root. The waiting counter is decremented. Once the counter hits zero (0), the vertex transitions
-      to the \textsc{found} state and is added to the sender queue to upcast its own minimum determination
-      to its parent.
+      root. The waiting counter is decremented. A comparsion is made to determine whether to accept the
+      reported minimum edge or keep the minimum edge found by the vertex's own testing. Ordinality is
+      determined by comparing the minimum node labels in each edge. Ties are broken by comparison of the
+      maximum node labels in each edge. The edges themselves, however, are stored with respect to direction
+      radiating from the component, i.e., the first label belongs to the component, the second outside.
+      Once the counter hits zero (0), the vertex transitions to the \textsc{FindReply} state and is added
+      to the sender queue to upcast its own minimum determination to its parent.
     }
     \paragraph{$q = \textsc{mwoe}$}{
       Receiving this message indicates that the root has chosen a MWOE to downcast through the tree.
       The vertex accepts this MWOE and passes it on to its own subtree. It is added to the sender queue
       for propagating the MWOE to its children. If the MWOE is incident to it, it adds itself to the
-      merging set $T_r$ to participate in the merging phase.
+      merging set $T_r$ to participate in the merging phase and removes the component root from the set
+      of roots unless the vertex is already the component root itself.
     }
 
     \paragraph{}{
