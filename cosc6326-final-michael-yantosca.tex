@@ -121,8 +121,7 @@
           \STATE{Distribute $h_a$ and $h_b$ to all machines.}
           \STATE{$(V_r, E_r) \gets \textsc{Load-Edge-To-Vertex-Centric}(F, k)$}
 
-          \STATE{Initialize exchange info $X_{L}$ for the link phase.}
-          \STATE{Initialize exchange info $X_{M}$ for the merge phase.}
+          \STATE{Initialize exchange info $X_{S}$.}
           \STATE{$T_r \gets \emptyset$}
           \COMMENT{local component set}
 
@@ -130,22 +129,31 @@
           \FORALL{$v \in V_r$}{
             \IF{$M(v) = \emptyset$ and $N(v) = \emptyset$}{
               \STATE{$T_0 \gets T_0 \cup \{ v \}$}
-              \STATE{$w_r \gets w_r - 1$}
             }\ELSE{
-              \STATE{$s(v) \gets \textsc{test}$}
               \STATE{$T_r \gets T_r \cup \{ v \}$}
             }\ENDIF
           }\ENDFOR
 
-          \STATE{$\omega_r \gets w_r = 0$}
-          \COMMENT{local termination = no more outgoing edges in $V_r$}
+          \STATE{$\omega_r \gets |T_r| = 0$}
+          \COMMENT{local termination = no nodes with outgoing edges}
           \STATE{$\Omega \gets \land_{r=1}^{k} \omega_r$}
-          \COMMENT{global termination = no more outgoing edges anywhere}
+          \COMMENT{global termination = no nodes with outgoing edges anywhere}
           \WHILE{$\neg \Omega$}{
+            \FORALL{$t \in T_r$}{
+              \STATE{$s(t) \gets \textsc{FindTest}$}
+              \COMMENT{Initialize component roots to find MWOE.}
+              \STATE{$u_e(t) \gets i(t)$}
+              \STATE{$v_e(t) \gets i(t)$}
+              \COMMENT{Reset MWOE to self-reference.}
+            }\ENDFOR
             \STATE{Execute \textsc{GHS-Connected-Components-Link} phase.}
+            \STATE{$n_j \gets 0$}
+            \COMMENT{Initialize join count.}
             \STATE{Execute \textsc{GHS-Connected-Components-Merge} phase.}
-            \STATE{$\omega_{r} \gets w_r = 0$}
-            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_{r}$}
+            \STATE{$\omega_r \gets n_j = 0$}
+            \COMMENT{Local termination = no joins.}
+            \STATE{$\Omega \gets \land_{r=1}^{k} \omega_r$}
+            \COMMENT{Global termination = no joins anywhere.}
           }\ENDWHILE
           \STATE{Execute \textsc{Gather-Local-Components} phase.}
         \end{algorithmic}
@@ -254,6 +262,7 @@
         \end{algorithmic}
       \end{algorithm}
     }
+
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
