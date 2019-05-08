@@ -655,4 +655,273 @@
 }
 
 \printbibliography
+
+\section{Appendix A}{
+  \paragraph{}{
+    Result graphs from the \texttt{bfs-coco} experiments on Erdos-Renyi graphs are provided
+    here for convenience of comparison with the \texttt{ghs-coco} experiments. The plots
+    have been redrawn with logarithmic $x$ and $y$ axes for legibility.
+  }
+  \paragraph{}{
+    Component statistics are not included on account of redundancy. If one compares the graphs from
+    the report on the \texttt{bfs-coco} experiments with the component statistics from this report,
+    one sees the exact same graph. This reproducibility implies an empirical corroboration of the
+    correctness of both implementations or, at the very least, consistent wrongness.
+  }
+
+  %% Monte Carlo
+  \paragraph{}{
+    \begin{figure}
+      \begin{tikzpicture}
+        \footnotesize
+        \begin{groupplot}[
+            group style={
+              group size=4 by 3,
+              xlabels at=edge bottom,
+              ylabels at=edge left,
+              vertical sep=0.5in
+            },
+            xmode=log,
+            ymode=log,
+            log basis x=2,
+            log basis y=10,
+            height=1.5in,
+            width=1.5in,
+            xlabel=$n$,
+            ylabel=$t$ (ns),
+            tick label style={font=\tiny},
+            label style={font=\tiny},
+            legend style={font=\tiny, legend columns=6},
+            legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+            legend to name=nprocs
+          ]
+          % 1-
+          \linregplots{\footnotesize T (GHS)}{./er-results/ghs-coco}{.mc.1-}{n}{Tc}
+          \linregplots{\footnotesize T (BFS)}{./er-results/bfs-coco}{.mc.1-}{n}{Tc}
+          \linregplots{\footnotesize M (GHS)}{./er-results/ghs-coco}{.mc.1-}{n}{M}
+          \linregplots{\footnotesize M (BFS)}{./er-results/bfs-coco}{.mc.1-}{n}{M}
+          % 1
+          \linregplots{}{./er-results/ghs-coco}{.mc.1}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.mc.1}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.mc.1}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.mc.1}{n}{M}
+          % 1+
+          \linregplots{}{./er-results/ghs-coco}{.mc.1+}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.mc.1+}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.mc.1+}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.mc.1+}{n}{M}
+        \end{groupplot}
+        \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){\texttt{$p = \frac{1-\epsilon}{n}$}};
+        \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){\texttt{$p = \frac{1}{n}$}};
+        \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){\texttt{$p = \frac{1+\epsilon}{n}$}};
+        \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+      \end{tikzpicture}
+      \caption{\footnotesize Empirical Complexities on MCER Graphs, $p \in [\frac{1-\epsilon}{n}, \frac{1+\epsilon}{n}]$}
+      \label{fig:bfs-coco-cplx-mc-er1}
+    \end{figure}
+  }
+  \paragraph{}{
+    \begin{figure}
+      \begin{tikzpicture}
+        \footnotesize
+        \begin{groupplot}[
+            group style={
+              group size=4 by 3,
+              xlabels at=edge bottom,
+              ylabels at=edge left,
+              vertical sep=0.5in
+            },
+            xmode=log,
+            ymode=log,
+            log basis x=2,
+            log basis y=10,
+            height=1.5in,
+            width=1.5in,
+            xlabel=$n$,
+            ylabel=$t$ (ns),
+            tick label style={font=\tiny},
+            label style={font=\tiny},
+            legend style={font=\tiny, legend columns=6},
+            legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+            legend to name=nprocs
+          ]
+          % L-
+          \linregplots{\footnotesize T (GHS)}{./er-results/ghs-coco}{.mc.L-}{n}{Tc}
+          \linregplots{\footnotesize T (BFS) }{./er-results/bfs-coco}{.mc.L-}{n}{Tc}
+          \linregplots{\footnotesize M (GHS)}{./er-results/ghs-coco}{.mc.L-}{n}{M}
+          \linregplots{\footnotesize M (BFS)}{./er-results/bfs-coco}{.mc.L-}{n}{M}
+          % L
+          \linregplots{}{./er-results/ghs-coco}{.mc.L}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.mc.L}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.mc.L}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.mc.L}{n}{M}
+          % L+
+          \linregplots{}{./er-results/ghs-coco}{.mc.L+}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.mc.L+}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.mc.L+}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.mc.L+}{n}{M}
+        \end{groupplot}
+        \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){\texttt{$p = \frac{(1-\epsilon)\ln n}{n}$}};
+        \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){\texttt{$p = \frac{\ln n}{n}$}};
+        \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){\texttt{$p = \frac{(1+\epsilon)\ln n}{n}$}};
+        \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+      \end{tikzpicture}
+      \caption{\footnotesize Empirical Complexities on MCER Graphs, $p \in [\frac{(1-\epsilon)\ln n}{n}, \frac{(1+\epsilon)\ln n}{n}]$}
+      \label{fig:bfs-coco-cplx-mc-erL}
+    \end{figure}
+  }
+  %% Las Vegas
+  \paragraph{}{
+    \begin{figure}
+      \begin{tikzpicture}
+        \footnotesize
+        \begin{groupplot}[
+            group style={
+              group size=4 by 3,
+              xlabels at=edge bottom,
+              ylabels at=edge left,
+              vertical sep=0.5in
+            },
+            xmode=log,
+            ymode=log,
+            log basis x=2,
+            log basis y=10,
+            height=1.5in,
+            width=1.5in,
+            xlabel=$n$,
+            ylabel=$t$ (ns),
+            tick label style={font=\tiny},
+            label style={font=\tiny},
+            legend style={font=\tiny, legend columns=6},
+            legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+            legend to name=nprocs
+          ]
+          % 1-
+          \linregplots{\footnotesize T (GHS)}{./er-results/ghs-coco}{.vg.1-}{n}{Tc}
+          \linregplots{\footnotesize T (BFS)}{./er-results/bfs-coco}{.vg.1-}{n}{Tc}
+          \linregplots{\footnotesize M (GHS)}{./er-results/ghs-coco}{.vg.1-}{n}{M}
+          \linregplots{\footnotesize M (BFS)}{./er-results/bfs-coco}{.vg.1-}{n}{M}
+          % 1
+          \linregplots{}{./er-results/ghs-coco}{.vg.1}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.vg.1}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.vg.1}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.vg.1}{n}{M}
+          % 1+
+          \linregplots{}{./er-results/ghs-coco}{.vg.1+}{n}{Tc}
+          \linregplots{}{./er-results/bfs-coco}{.vg.1+}{n}{Tc}
+          \linregplots{}{./er-results/ghs-coco}{.vg.1+}{n}{M}
+          \linregplots{}{./er-results/bfs-coco}{.vg.1+}{n}{M}
+        \end{groupplot}
+        \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){\texttt{$p = \frac{1-\epsilon}{n}$}};
+        \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){\texttt{$p = \frac{1}{n}$}};
+        \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){\texttt{$p = \frac{1+\epsilon}{n}$}};
+        \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+      \end{tikzpicture}
+      \caption{\footnotesize Empirical Complexities on LVER Graphs, $p \in [\frac{1-\epsilon}{n}, \frac{1+\epsilon}{n}]$}
+      \label{fig:bfs-coco-cplx-vg-er1}
+    \end{figure}
+
+    \paragraph{}{
+      \begin{figure}
+        \begin{tikzpicture}
+          \footnotesize
+          \begin{groupplot}[
+              group style={
+                group size=4 by 3,
+                xlabels at=edge bottom,
+                ylabels at=edge left,
+                vertical sep=0.5in
+              },
+              xmode=log,
+              ymode=log,
+              log basis x=2,
+              log basis y=10,
+              height=1.5in,
+              width=1.5in,
+              xlabel=$n$,
+              ylabel=$t$ (ns),
+              tick label style={font=\tiny},
+              label style={font=\tiny},
+              legend style={font=\tiny, legend columns=6},
+              legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+              legend to name=nprocs
+            ]
+            % L-
+            \linregplots{\footnotesize T (GHS)}{./er-results/ghs-coco}{.vg.L-}{n}{Tc}
+            \linregplots{\footnotesize T (BFS)}{./er-results/bfs-coco}{.vg.L-}{n}{Tc}
+            \linregplots{\footnotesize M (GHS)}{./er-results/ghs-coco}{.vg.L-}{n}{M}
+            \linregplots{\footnotesize M (BFS)}{./er-results/bfs-coco}{.vg.L-}{n}{M}
+            % L
+            \linregplots{}{./er-results/ghs-coco}{.vg.L}{n}{Tc}
+            \linregplots{}{./er-results/bfs-coco}{.vg.L}{n}{Tc}
+            \linregplots{}{./er-results/ghs-coco}{.vg.L}{n}{M}
+            \linregplots{}{./er-results/bfs-coco}{.vg.L}{n}{M}
+            % L+
+            \linregplots{}{./er-results/ghs-coco}{.vg.L+}{n}{Tc}
+            \linregplots{}{./er-results/bfs-coco}{.vg.L+}{n}{Tc}
+            \linregplots{}{./er-results/ghs-coco}{.vg.L+}{n}{M}
+            \linregplots{}{./er-results/bfs-coco}{.vg.L+}{n}{M}
+          \end{groupplot}
+          \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){\texttt{$p = \frac{(1-\epsilon)\ln n}{n}$}};
+          \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){\texttt{$p = \frac{\ln n}{n}$}};
+          \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){\texttt{$p = \frac{(1+\epsilon)\ln n}{n}$}};
+          \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+        \end{tikzpicture}
+        \caption{\footnotesize Empirical Complexities on LVER Graphs, $p \in [\frac{(1-\epsilon)\ln n}{n}, \frac{(1+\epsilon)\ln n}{n}]$}
+        \label{fig:bfs-coco-cplx-vg-erL}
+      \end{figure}
+    }
+  }
+  \paragraph{}{
+    \begin{figure}
+      \begin{tikzpicture}
+        \footnotesize
+        \begin{groupplot}[
+            group style={
+              group size=4 by 3,
+              xlabels at=edge bottom,
+              ylabels at=edge left,
+              vertical sep=0.5in
+            },
+            xmode=log,
+            ymode=log,
+            log basis x=2,
+            log basis y=10,
+            height=1.5in,
+            width=1.5in,
+            xlabel=$k$,
+            ylabel=$t$ (ns),
+            tick label style={font=\tiny},
+            label style={font=\tiny},
+            legend style={font=\tiny, legend columns=6},
+            legend entries={,$k = 1$,,$k = 2$,,$k = 4$,,$k = 8$,,$k = 16$,,$k = 32$},
+            legend to name=nprocs
+          ]
+          % facebook combined
+          \linregplots{\footnotesize T (GHS)}{./rw-results/ghs-coco}{.facebook_combined}{k}{Tc}
+          \linregplots{\footnotesize T (BFS)}{./rw-results/bfs-coco}{.facebook_combined}{k}{Tc}
+          \linregplots{\footnotesize M (GHS)}{./rw-results/ghs-coco}{.facebook_combined}{k}{M}
+          \linregplots{\footnotesize M (BFS)}{./rw-results/bfs-coco}{.facebook_combined}{k}{M}
+          % ca-AstroPh
+          \linregplots{}{./rw-results/ghs-coco}{.ca-AstroPh}{k}{Tc}
+          \linregplots{}{./rw-results/ghs-coco}{.ca-AstroPh}{k}{Tc}
+          \linregplots{}{./rw-results/ghs-coco}{.ca-AstroPh}{k}{M}
+          \linregplots{}{./rw-results/bfs-coco}{.ca-AstroPh}{k}{M}
+          % roadNet-TX
+          \linregplots{}{./rw-results/ghs-coco}{.roadNet-TX}{k}{Tc}
+          \linregplots{}{./rw-results/ghs-coco}{.roadNet-TX}{k}{Tc}
+          \linregplots{}{./rw-results/ghs-coco}{.roadNet-TX}{k}{M}
+          \linregplots{}{./rw-results/bfs-coco}{.roadNet-TX}{k}{M}
+        \end{groupplot}
+        \node[anchor=south] at ($(group c2r1.north east)!0.5!(group c3r1.north west)$){facebook};
+        \node[anchor=south] at ($(group c2r2.north east)!0.5!(group c3r2.north west)$){ca-AstroPh};
+        \node[anchor=south] at ($(group c2r3.north east)!0.5!(group c3r3.north west)$){roadNet-TX};
+        \node[below] at (current bounding box.south){\pgfplotslegendfromname{nprocs}};
+      \end{tikzpicture}
+      \caption{\footnotesize Empirical Complexities on Real-World Graphs}
+      \label{fig:bfs-coco-cplx-rw}
+    \end{figure}
+  }
+}
+
 \end{document}
