@@ -1121,6 +1121,38 @@
 }
 
 \section{Conclusions}{
+  \paragraph{}{
+    It was somewhat surprising to see that the BFS algorithm slightly outperformed
+    the GHS algorithm in the experiments on dense graphs. This was largely due to a
+    weakness in the implementation, namely the pure reliance on a unicast messaging
+    strategy. While the strategy was employed due to time constraints and over concerns
+    of ensuring correctness, there are a number of opportunities for improvement.
+  }
+  \paragraph{}{
+    In the first case, broadcast strategies could easily be employed during the MWOE
+    search subphase for several of the message types, notably \textsc{MWOE} and
+    \textsc{FIND}. Several bytes per message could have been saved. Moreover, the
+    shell of the \texttt{bfs-coco} source served as the genesis for the \texttt{ghs-coco}
+    source, and the map of incoming edges was already constructed during execution
+    but never used.
+  }
+  \paragraph{}{
+    Another improvement would be to explore the use of subcommunicators. It may happen
+    (and certainly did happen according to debugging runs executed during local
+    development) that a machine exhausts its set of local components with active edges
+    before other machines finish theirs. It would be better for those machines to
+    become in essence ``dark silicon'' at the mere cost of a single message forfeiting
+    participation to the savings of innumerable useless participations in the gather
+    operations better left to the subset of active machines.
+  }
+  \paragraph{}{
+    Still, the aggressive pruning of known singletons from the start and of joined edges
+    during the merge phase paid off dividends in reducing overall phase count and,
+    in the case of sparse graphs, empirical message and time complexity. More research
+    into the areas suggested for improvement as well as more explicit and considered
+    job allocation strategies would likely reap an even more lucrative benefit, especially
+    when one considers the often overlooked cost of energy.
+  }
 }
 
 \printbibliography
