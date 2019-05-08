@@ -600,12 +600,18 @@
     \paragraph{}{
       In order to facilitate rapid development, extensive use was made of the C++ STL
       libraries. The vertex input map was a \texttt{std::map}\autocite{map}
-      of vertex structures keyed by vertex ID. In each vertex structure, the collections
-      of neighbors and BFS tree children were of type \texttt{std::unordered\_set<uint32\_t>}\autocite{unorderedset}.
-      The incoming edge map used to facilitate faster lookup on incoming messages was
-      accomplished with a \texttt{std::map<std::unordered\_set<uint32\_t>>}. The vertex output
-      map was a \texttt<std::vector>\autocite{vector} of vertex structures, but could just
-      as easily have been a \texttt{std::map} (and was in earlier development).
+      of vertex structures keyed by vertex ID. In each vertex structure, the collection
+      GHS tree children was of type \texttt{std::unordered\_set<uint32\_t>}\autocite{unorderedset}.
+      The set of neighbors was divided into an active and inactive set using the
+      \texttt{std::set<uint32\_t>}\autocite{set} type. Since the sets were ordered,
+      the MWOE was always the head of the iterator for the active set.
+      An incoming edge map that could have been used to facilitate faster lookup on incoming messages
+      was constructed with a \texttt{std::map<std::unordered\_set<uint32\_t>>}, but it played no
+      part in the unicast messaging scheme. The component map was a \texttt{std::map}\autocite{map}
+      of vertex structures keyed by vertex ID. Its initial collection held all the
+      vertices that had at least one incident edge. A separate component map was kept
+      for vertices that had no incident edges. Component statistics were gathered at the
+      end by iterating over both component maps.
     }
     \paragraph{}{
       Randomized elements\autocite{random} made use of the Mersenne twister PRNG \texttt{std::mt19937}\autocite{mt19337}
