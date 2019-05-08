@@ -102,7 +102,7 @@
       The GHS algorithm for finding connected components is given below in Algorithm~\ref{alg:ghs-coco}.
       For the sake of legibility, several helper functions and procedures are abstracted out
       from the main body and presented following the main algorithm. In the implementation,
-      only Algorithm~\ref{alg:exchange} is actually abstracted out into a separate function.
+      only Algorithm~\ref{alg:exchange-all} and Algorithm~\ref{alg:exchange-one} are actually abstracted out into separate functions.
       All other sub-algorithms run within the main context to avoid unnecessary function call overhead,
       particularly Algorithm~\ref{alg:machine-hash}.
     }
@@ -151,24 +151,45 @@
         \end{algorithmic}
       \end{algorithm}
     }
+
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{Exchange}, Machine-wise Exchange of Information}
-        \label{alg:exchange}
+        \caption{\textsc{Exchange-All}, Machine-wise Exchange of Information}
+        \label{alg:exchange-all}
         \begin{algorithmic}
           \REQUIRE{$X_i$, exchange information for machine $i$}
           \REQUIRE{$send(X_i)[m]$, send buffer targeting machine $m$ from machine $i$}
           \REQUIRE{$recv(X_m)$, receive buffer for machine $m$}
           \REQUIRE{$k$, the number of machines participating}
           \FOR{$m \in [0,k-1]$}{
-            \STATE{Machine $m$ gathers $len(send(X_i)[m])$ from all machines.}
-            \STATE{Machine $m$ allocates $\sum_{i=0}^{k-1} len(send(X_i)[m])$ for $recv(X_m)$.}
-            \STATE{$recv(X_m) \gets concat(\{ send(X_i)[m] \ | \  0 \leq i < k \})$}
+            \STATE{\textsc{Exchange-One}($X_i$)}
           }\ENDFOR
         \end{algorithmic}
       \end{algorithm}
     }
+
+    \paragraph{}{
+      \begin{algorithm}
+        \footnotesize
+        \caption{\textsc{Exchange-One}, Gathering of Information at One Machine}
+        \label{alg:exchange-one}
+        \begin{algorithmic}
+          \REQUIRE{$X_i$, exchange information for machine $i$}
+          \REQUIRE{$send(X_i)[m]$, send buffer targeting machine $m$ from machine $i$}
+          \REQUIRE{$recv(X_m)$, receive buffer for machine $m$}
+          \REQUIRE{$k$, the number of machines participating}
+          \STATE{Machine $m$ gathers $len(send(X_i)[m])$ from all machines.}
+          \STATE{Machine $m$ allocates $\sum_{i=0}^{k-1} len(send(X_i)[m])$ for $recv(X_m)$.}
+          \STATE{$recv(X_m) \gets concat(\{ send(X_i)[m] \ | \  0 \leq i < k \})$}
+        \end{algorithmic}
+      \end{algorithm}
+      Algorithm~\ref{alg:exchange-one} is abstracted out from the inside of the loop
+      in Algorithm~\ref{alg:exchange-all} for the purpose of enabling a simple gather
+      of the component statistics upon the termination of Algorithm~\ref{alg:ghs-coco}.
+    }
+
+
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
