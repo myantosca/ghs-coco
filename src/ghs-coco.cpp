@@ -395,10 +395,7 @@ int main(int argc, char *argv[]) {
 
   MPI_Allreduce(&local_done, &global_done, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
   messages += machines << 1;
-  // Continue until all edges have been rendered inactive.
-
-  //std::queue<vertex_t *> M_r;
-
+  // Continue until no more joins are possible.
   while (!global_done) {
     // Find phase
 
