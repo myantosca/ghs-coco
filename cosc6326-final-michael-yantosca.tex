@@ -157,7 +157,7 @@
             \STATE{$\Omega \gets \land_{r=1}^{k} \omega_r$}
             \COMMENT{Global termination = no joins anywhere.}
           }\ENDWHILE
-          \STATE{Execute \textsc{Gather-Local-Components} phase.}
+          \STATE{Execute \textsc{Component-Census} phase.}
         \end{algorithmic}
       \end{algorithm}
     }
@@ -567,7 +567,7 @@
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{Gather-Local-Components}, Final Phase of Algorithm~\ref{alg:ghs-coco} }
+        \caption{\textsc{Component-Census}, Final Phase of Algorithm~\ref{alg:ghs-coco} }
         \label{alg:ghs-coco-gather}
         \begin{algorithmic}
           \FORALL{$u \in T_r$}{
@@ -580,9 +580,21 @@
           \STATE{$\Omega_G \gets \land_{r=1}^{k} \omega_F$}
           \WHILE{$\neg \Omega_G$}{
             \FORALL{$u \in S_r$}{
-              \FORALL{$i_v \in C(u)$}{
-                \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( \textsc{ping}, i_v , i(u), \bot )$}
-              }\ENDFOR
+              \IF{$w(u) = 0$}{
+                \IF{$i_g(u) = i(u)$}{
+                  \STATE{$w_G \gets w_G - 1$}
+                }\ELSE{
+                  \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_p(u))$}
+                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{pong}, i_p(u), i(u), |g|(u) )$}
+                  \COMMENT{Upcast count.}
+                }\ENDIF
+              }\ELSE{
+                \FORALL{$i_v \in C(u)$}{
+                  \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{ping}, i_v , i(u), \bot )$}
+                  \COMMENT{Downcast query.}
+                }\ENDFOR
+              }\ENDIF
             }\ENDFOR
 
             \STATE{$\textsc{Exchange-All}(X_S)$}
@@ -594,21 +606,19 @@
               \IF{$q = \textsc{ping}$}{
                 \STATE{$w(v) \gets |C(v)|$}
                 \STATE{$S_r \gets S_r \cup \{ v \}$}
+                \COMMENT{Queue for downcast.}
               }\ELSIF{$q = \textsc{pong}$}{
                 \STATE{$w(v) \gets w(v) - 1$}
                 \STATE{$|g|(v) \gets |g|(v) + b$}
+                \COMMENT{Add to component subtotal.}
                 \IF{$w(v) = 0$}{
-                  \IF{$g(v) = i(v)$}{
-                    \STATE{$w_G \gets w_G - 1$}
-                  }\ELSE{
-                    \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( \textsc{pong}, i_v , i(u), |g|(u) )$}
-                    \STATE{$S_r \gets S_r \cup \{ v \}$}
-                  }\ENDIF
+                  \STATE{$S_r \gets S_r \cup \{ v \}$}
+                  \COMMENT{Queue for upcast.}
                 }\ENDIF
               }\ENDIF
             }\ENDFOR
             \STATE{$\omega_G \gets w_G = 0$}
-            \STATE{$\Omega_G \gets \land_{r=1}^{k} \omega_F$}
+            \STATE{$\Omega_G \gets \land_{r=1}^{k} \omega_G$}
           }\ENDWHILE
 
           \FORALL{$t \in T_r$}{
@@ -617,9 +627,8 @@
           \FORALL{$t \in T_0$}{
             \STATE{$send(X_S)[0] \gets send(X_S)[0] + ( i(t), 0 )$}
           }\ENDFOR
-          \STATE{Gather $len(send(X_S)[0])$ from all machines to machine $m_0$.}
-          \STATE{Allocate $recv(X_S)$ at machine $m_0$.}
-          \STATE{Gather $send(X_S)[0]$ from all machines to machine $m_0$ at $recv(X_S)$.}
+          \STATE{$\textsc{Exchange-One}(X_S, 0)$}
+          \COMMENT{Collect component counts at machine with rank 0.}
         \end{algorithmic}
       \end{algorithm}
     }
