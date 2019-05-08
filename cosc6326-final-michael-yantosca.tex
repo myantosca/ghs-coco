@@ -145,8 +145,10 @@
               \STATE{$u_e(t) \gets i(t)$}
               \STATE{$v_e(t) \gets i(t)$}
               \COMMENT{Reset MWOE to self-reference.}
+              \STATE{$S_r \gets \{ t \}$}
+              \COMMENT{Add each node to the find phase work queue.}
             }\ENDFOR
-            \STATE{Execute \textsc{GHS-Connected-Components-Link} phase.}
+            \STATE{Execute \textsc{GHS-Connected-Components-Find-MWOE} phase.}
             \STATE{$n_j \gets 0$}
             \COMMENT{Initialize join count.}
             \STATE{Execute \textsc{GHS-Connected-Components-Merge} phase.}
@@ -266,8 +268,8 @@
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{GHS-Connected-Components-Link}, Link Phase of Algorithm~\ref{alg:ghs-coco} }
-        \label{alg:ghs-coco-link}
+        \caption{\textsc{GHS-Connected-Components-Find-MWOE}, Link Phase of Algorithm~\ref{alg:ghs-coco} }
+        \label{alg:ghs-coco-find-mwoe}
         \begin{algorithmic}
           \REQUIRE{$T_0$, the set of local component roots where $|M \cup N| = 0$}
           \REQUIRE{$T_r$, the set of local component roots where $|M \cup N| > 0$}
@@ -275,13 +277,13 @@
           \REQUIRE{$E_r$, the reverse lookup table of incoming edges}
           \REQUIRE{$S_r \gets \emptyset$, the set of nodes sending messages}
           \REQUIRE{$V_e \gets \emptyset$, the set of nodes holding minimum edges}
-          \REQUIRE{$w_L \gets |T_r|$, the number of components seeking an outgoing edge}
+          \REQUIRE{$w_L \gets |V_r| - |T_0|$, the number of components with at least one incident edge}
           \STATE{$\omega_e \gets w_L = 0$}
           \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
           \WHILE{$\neg \Omega_e$}{
-            \STATE{Execute \textsc{GHS-Connected-Components-Link-Send} phase.}
-            \STATE{Execute \textsc{GHS-Connected-Components-Link-Receive} phase.}
-            \STATE{$\omega_e \gets w_r = 0$}
+            \STATE{Execute \textsc{GHS-Connected-Components-Find-MWOE-Send} phase.}
+            \STATE{Execute \textsc{GHS-Connected-Components-Find-MWOE-Receive} phase.}
+            \STATE{$\omega_e \gets w_L = 0$}
             \STATE{$\Omega_e \gets \land_{r=1}^{k} \omega_e$}
           }\ENDWHILE
         \end{algorithmic}
@@ -290,67 +292,96 @@
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{GHS-Connected-Components-Link-Send}, Send Phase of Algorithm~\ref{alg:ghs-coco-link} }
-        \label{alg:ghs-coco-link-send}
+        \caption{\textsc{GHS-Connected-Components-Find-MWOE-Send}, Send Phase of Algorithm~\ref{alg:ghs-coco-find-mwoe} }
+        \label{alg:ghs-coco-find-mwoe-send}
         \begin{algorithmic}
-          \FORALL{$u \in S_r$}{
-              \IF{$s(u) = \textsc{test}$}{
+          \WHILE{$S_r \neq \emptyset$}{
+            \STATE{$u \gets \textsc{Pop}(S_r)$}
+            \IF{$s(u) = \textsc{FindTest}$}{
+              \IF{$N(u) > 0$}{
                 \STATE{$i_v \gets \min\limits_{v \in N(u)} v$}
                 \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
                 \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{ping}, i_v, i(u), i_g(u) )$}
-                \COMMENT{Test vertex $e_{min}$.}
-              }\ELSIF{$s(u) = \textsc{find}$}{
-                \STATE{$(u_e(u), v_e(u) \gets (u, \min\limits_{v \in N(u)} v)$}
-                \STATE{$s(u) = \textsc{wait}$}
+                \COMMENT{Test vertex $i_v$.}
+              }\ELSE{
+                \STATE{$s(u) \gets \textsc{FindSend}$}
+                \STATE{$S_r \gets S_r \cup \{ u \}$}
+                \COMMENT{$\epsilon$-transition: no neighbors outside component}
+              }\ENDIF
+            }\ELSIF{$s(u) = \textsc{FindSend}$}{
+              \STATE{$w(u) \gets |C(u)|$}
+              \IF{$w(u) > 0$}{
+                \STATE{$s(u) \gets \textsc{FindWait}$}
                 \FORALL{$i_v \in C(u)$}{
                   \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
                   \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{find}, i_v, i(u), i_g(u) )$}
                   \COMMENT{Downcast \textsc{find}.}
                 }\ENDFOR
-              }\ELSIF{$s(u) = \textsc{found}$}{
-                \IF{$i_g(u) \neq i(u)$}{
-                  \STATE{$send(X_S)[r] \gets send(X_S)[r] + ( \textsc{found}, p(v), u_e, v_e )$}
-                  \COMMENT{Upcast subtree $e_{min}$.}
-                }\ENDIF
-              }\ELSIF{$s(u) = \textsc{mwoe}$}{
-                \FORALL{$v \in C(u)$}{
-                  \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
-                  \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{mwoe}, i_v, u_e(u), v_e(u) )$}
-                  \COMMENT{Downcast \textsc{mwoe}.}
-                }\ENDFOR
+              }\ELSE{
+                \STATE{$s(u) \gets \textsc{FindReply}$}
+                \STATE{$S_r \gets S_r \cup \{ u \}$}
+                \COMMENT{$\epsilon$-transition: no children}
               }\ENDIF
-            }\ENDFOR
+            }\ELSIF{$s(u) = \textsc{FindReply}$}{
+              \IF{$i_g(u) = i(u)$}{
+                \STATE{$s(u) \gets \textsc{MwoeSend}$}
+                \STATE{$S_r \gets S_r \cup \{ u \}$}
+                \COMMENT{$\epsilon$-transition: component root}
+              }\ELSE{
+                \STATE{$s(u) \gets \textsc{Idle}$}
+                \STATE{$m_p \gets \textsc{Machine-Hash}(h_a, h_b, k, i_p(u))$}
+                \STATE{$send(X_S)[m_p] \gets send(X_S)[m_p] + ( \textsc{found}, i_p(u), u_e(u), v_e(u) )$}
+                \COMMENT{Upcast \textsc{found}.}
+              }\ENDIF
+            }\ELSIF{$s(u) = \textsc{mwoe}$}{
+              \STATE{$s(u) \gets \textsc{Idle}$}
+              \STATE{$w_L \gets w_L - 1$}
+              \FORALL{$i_v \in C(u)$}{
+                \STATE{$m_v \gets \textsc{Machine-Hash}(h_a, h_b, k, i_v)$}
+                \STATE{$send(X_S)[m_v] \gets send(X_S)[m_v] + ( \textsc{mwoe}, i_v, u_e(u), v_e(u) )$}
+                \COMMENT{Downcast \textsc{mwoe}.}
+              }\ENDFOR
+            }\ENDIF
+          }\ENDWHILE
 
-            \STATE{$\textsc{Exchange}(X_S)$}
-            \STATE{$\textsc{Rewind}(X_S)$}
-            \STATE{$S_r \gets \emptyset$}
+          \STATE{$\textsc{Exchange}(X_S)$}
+          \STATE{$\textsc{Rewind}(X_S)$}
         \end{algorithmic}
       \end{algorithm}
-      Algorithm~\ref{alg:ghs-coco-link-send} is a straightforward breakdown based on \emph{vertex state}.
+      Algorithm~\ref{alg:ghs-coco-find-mwoe-send} is a straightforward breakdown based on \emph{vertex state}.
     }
-    \paragraph{$s(u) = \textsc{state}$}{
-      The vertex sends a \textsc{ping} message along its minimum outgoing edge (here defined as the minimum
-      opposite node label). It expects a \textsc{pong} message from the node indicating the opposite node's
-      current group label.
+    \paragraph{$s(u) = \textsc{FindTest}$}{
+      If the vertex $u$ has neighbors in its active set, it sends a \textsc{ping} message along
+      its minimum outgoing edge (here defined as the minimum opposite node label). It expects a
+      \textsc{pong} message from the opposite node indicating the other's group label.
+      If $u$ has no active neighbors, i.e., neighbors that are \emph{not} in its current component,
+      it makes an immediate $\epsilon$-transition into the \textsc{FindSend} state.
     }
-    \paragraph{$s(u) = \textsc{find}$}{
-      The vertex sends a \textsc{find} message to all its component subtree children. It expects all children
+    \paragraph{$s(u) = \textsc{FindSend}$}{
+      If the vertex $u$ has children, it sends a \textsc{find} message to them. It expects all children
       to reply with the minimum edge along their respective subtrees via the \textsc{found} message.
+      If there are no children, the vertex makes an immediate $\epsilon$-transition into the
+      \textsc{FindReply} state.
     }
-    \paragraph{$s(u) = \textsc{found}$}{
-      The vertex sends a \textsc{found} message to its parent in the component subtree. This is the upcast
-      to the root of the component-wide minimum weight edge.
+    \paragraph{$s(u) = \textsc{FindReply}$}{
+      If the vertex $u$ is not a component root, it sends a \textsc{found} message to its parent.
+      If $u$ is a component root, it makes an immediate $\epsilon$-transition into the \textsc{MwoeSend}
+      state.
     }
-    \paragraph{$s(u) = \textsc{mwoe}$}{
+    \paragraph{$s(u) = \textsc{MwoeSend}$}{
       The vertex sends a \textsc{mwoe} message to all its component subchildren. It expects no response
-      since termination is determined by a counter incremented on the receiving end.
+      since termination is determined by a counter decremented on the receiving end.
     }
-
+    \paragraph{Other States}{
+      The \textsc{Idle} and \textsc{FindWait} states do not actively send messages but rather wait
+      for messages to be sent to them. They are in a reactive state whose behavior is handled in
+      Algorithm~\ref{alg:ghs-coco-find-mwoe-recv}.
+    }
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
-        \caption{\textsc{GHS-Connected-Components-Link-Receive}, Send Phase of Algorithm~\ref{alg:ghs-coco-link} }
-        \label{alg:ghs-coco-link-recv}
+        \caption{\textsc{GHS-Connected-Components-Find-MWOE-Receive}, Send Phase of Algorithm~\ref{alg:ghs-coco-find-mwoe} }
+        \label{alg:ghs-coco-find-mwoe-recv}
         \begin{algorithmic}
             \FORALL{$(q, i_v, a, b) \in recv(X_S)$}{
               \STATE{$v \gets V_r[i_v]$}
@@ -403,7 +434,7 @@
             }\ENDFOR
         \end{algorithmic}
       \end{algorithm}
-      Algorithm~\ref{alg:ghs-coco-link-recv} is a straightforward breakdown based on \emph{message type}.
+      Algorithm~\ref{alg:ghs-coco-find-mwoe-recv} is a straightforward breakdown based on \emph{message type}.
     }
     \paragraph{$q = \textsc{ping}$}{
       The vertex receives a \textsc{ping} message. Regardless of state, it needs to reply.
