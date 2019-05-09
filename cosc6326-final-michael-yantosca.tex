@@ -913,7 +913,7 @@
       \end{figure}
     }
     \paragraph{}{
-      The results depicted in Figure~\ref{fig:ghs-coco-cplx-mc-er1} offset the improvements see in Figure~\ref{fig:ghs-coco-cplx-mc-erL}.
+      The results depicted in Figure~\ref{fig:ghs-coco-cplx-mc-er1} offset the improvements seen in Figure~\ref{fig:ghs-coco-cplx-mc-erL}.
       The empirical time and message complexity is roughly the same if not slightly greater than the BFS algorithm (see Appendix A).
       The likely cause is the unicast nature of the communications in this implementation of the GHS algorithm. Whereas the BFS
       algorithm could utilize broadcast techniques to keep the messages small in many cases, the simultaneous though pair-wise
@@ -1181,7 +1181,7 @@
     }
     \paragraph{}{
       Figure~\ref{fig:ghs-coco-compmean} reflects exactly the component mean sizes observed in the BFS experiments.
-      There is not much more to say beyond what was covered in the previous report except that this provides some
+      There is not much more to say beyond what was covered in the previous report\autocite[17-19]{bfs-coco} except that this provides some
       empirical corroboration of the correctness or at least consistency of the GHS implementation with respect
       to the BFS implementation.
     }
@@ -1267,11 +1267,12 @@
   }
   \paragraph{}{
     In the first case, broadcast strategies could easily be employed during the MWOE
-    search subphase for several of the message types, notably \textsc{MWOE} and
-    \textsc{FIND}. Several bytes per message could have been saved. Moreover, the
+    search subphase for several of the message types, notably \textsc{mwoe} and
+    \textsc{find}. Several bytes per message could have been saved. Moreover, the
     shell of the \texttt{bfs-coco} source served as the genesis for the \texttt{ghs-coco}
     source, and the map of incoming edges was already constructed during execution
-    but never used.
+    but never used. The incoming edges map would likely need to be supplemented by
+    an incoming parents map to achieve the best optimization.
   }
   \paragraph{}{
     Another improvement would be to explore the use of subcommunicators. It may happen
@@ -1287,7 +1288,7 @@
     during the merge phase paid off dividends in reducing overall phase count and,
     in the case of sparse graphs, empirical message and time complexity. More research
     into the areas suggested for improvement as well as more explicit and considered
-    job allocation strategies would likely reap an even more lucrative benefit, especially
+    job allocation strategies would likely reap a lucrative benefit, especially
     when one considers the often overlooked cost of energy.
   }
 }
