@@ -646,14 +646,49 @@
         \end{algorithmic}
       \end{algorithm}
     }
+    \paragraph{}{
+      The component census in Algorithm~\ref{alg:component-census} simply performs a downcast and
+      convergecast on all the components in the forest, after which it gathers the statistics
+      at the machine with rank 0 for reporting to the user. This is a simple post-hoc operation
+      with $O(n)$ message complexity.
+    }
 
     \begin{theorem}
       \label{thm:ghs-coco}
       Algorithm~\ref{alg:ghs-coco} determines the connected components in an arbitrary graph
-      of $n$ vertices distributed over $k$ machines with communication complexity $O(???))$.
+      of $n$ vertices distributed over $k$ machines with communication complexity $O(m + n \log n)$.
     \end{theorem}
     \begin{proof}
-      Because reasons.
+      Because the implementation uses a strictly unicast messaging model, the communication complexity
+      follows the message complexity. Since each root vertex in the component forest yields
+      one MWOE per phase, the worst case scenario is that all the roots align themselves
+      in pairwise joins, causing a reduction in components by half. This constant reduction
+      indicates that the number of phases will be on the order of $O(\log n)$.
+      \paragraph{}{
+        Each phase consists of a find subphase and merge subphase. The find subphase takes $O(n)$
+        messages on account of the complexities of the \textsc{find} downcast, the \textsc{found}
+        convergecast, and the \textsc{mwoe} downcast that comprise it. Each operation takes $O(n)$
+        messages, so their summation is also $O(n)$. The merge subphase has a simple exchange which
+        in the initial worst case is $\frac{n}{2}$ (pairwise mutual join) followed by a simultaneous
+        per-component downcast which may hit all nodes in the worst case, so the message cost is
+        likewise $O(n)$ for the merge subphase. Over all phases, the total message complexity
+        in this regard will be $O(n \log n)$.
+      }
+      \paragraph{}{
+        Suppose that the graph is a complete graph. The total component reduction will occur in
+        the first round, but the active edges which have not been traversed in a join must be
+        checked regardless. The checking will incur a total message cost of $O(m)$, i.e., the
+        number of edges.
+      }
+      \paragraph{}{
+        The post-hoc component census takes $O(n)$ messages. This is readily subsumed into
+        the $O(n \log n)$ complexity posed by the find and merge subphases.
+      }
+      \paragraph{}{
+        Depending on the nature of the graph, one of the two aforementioned total message
+        complexity terms will dominate. As such, the total message complexity and therefore
+        the communication complexity will be the sum of the two terms or $O(m + n \log n)$.
+      }
     \end{proof}
   }
 }
