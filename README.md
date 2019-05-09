@@ -215,7 +215,7 @@ a component census with a gather centered at the machine with rank 0, which outp
 
 The post-hoc census is done to keep the code simple and maintainable. An online census would necessitate
 many more messages because of the frequent reparenting of vertices during the merge phase. As implemented,
-the census requires O(n) additional messages for the downcast and convergecast in each component.
+the census requires _O(n)_ additional messages for the downcast and convergecast in each component.
 
 Some optimizations have been made to limit unnecessary communication. Since singleton components are
 known by their lack of incident edges _ab initio_, they do not participate in the exchange phases but
