@@ -662,7 +662,7 @@
       Because the implementation uses a strictly unicast messaging model, the communication complexity
       follows the message complexity. Since each root vertex in the component forest yields
       one MWOE per phase, the worst case scenario is that all the roots align themselves
-      in pairwise joins, causing a reduction in components by half. This constant reduction
+      in pairwise joins, causing a reduction in components by at least half. This constant reduction
       indicates that the number of phases will be on the order of $O(\log n)$.
       \paragraph{}{
         Each phase consists of a find subphase and merge subphase. The find subphase takes $O(n)$
