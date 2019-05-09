@@ -563,12 +563,26 @@
         \end{algorithmic}
       \end{algorithm}
     }
+    \paragraph{}{
+      The merge phase in Algorithm ~\ref{alg:ghs-coco-merge} consists of a few simple graph-wide operations. The local component
+      roots are checked for the presence of outgoing edges, and those which need to perform a join add a message to be sent
+      during a $k$-way exchange among all the machines. Those that receive the messages become the targets of the join operation
+      and adopt their respective senders. In the case where two vertices issue a mutual join, i.e., each sends a join request
+      to the other, the vertex with the lesser vertex id becomes the parent and remains a component root. All other
+      participants in the joins whether sender or receiver lose their root status so as to accomplish the necessary
+      reduction dictated by the GHS algorithm. As argued in the text, at most one pair of nodes in a component-to-be
+      will issue that mutual join\autocite[105]{DNA}, and one of them must be the new component root. The remainder
+      of the merge phase is a simple propagation of the component root elect to its enlarged family. The root
+      takes parentage of any old parent which was not itself along with its old children, if it had any. Its
+      descendants are then reckoned through their prior children and in some cases parents, where a \textsc{new} message
+      has caused a reparenting downstream, as well as through the join edges that brought the formerly disjoint fragments together.
+    }
 
     \paragraph{}{
       \begin{algorithm}
         \footnotesize
         \caption{\textsc{Component-Census}, Final Phase of Algorithm~\ref{alg:ghs-coco} }
-        \label{alg:ghs-coco-gather}
+        \label{alg:component-census}
         \begin{algorithmic}
           \FORALL{$u \in T_r$}{
             \STATE{$w(u) \gets |C(u)|$}
