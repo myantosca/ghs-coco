@@ -185,6 +185,9 @@ BFS tree in the output map. The preservation of the vertex neighbors set was pro
 helpful strategy in avoiding undercounting or overcounting the number of upcast responses received by
 any given node. Inquisitive users may use `git log` or similar tools to observe the development history.
 
+Graphs of the BFS experiments and other details not covered in this README are available in
+the report `cosc6326-pa2-michael-yantosca.pdf`.
+
 ghs-coco
 --------
 
@@ -241,6 +244,10 @@ Another option which may be of interest to users is the `-g` or debug option. Th
 at critical points in the code to ensure that vertices are in expected states when sending and receiving
 certain types of messages. There is a significant overhead incurred by using this feature, but it was
 invaluable in tracing down various logic flaws during the course of development.
+
+Graphs of the GHS experiments and other details not covered in this README are available in
+the report `cosc6326-final-michael-yantosca.pdf`. Appendix A of the report contains graphs making
+direct comparison of the empirical complexity between the BFS and GHS connected components algorithms.
 
 Known Issues
 ------------
